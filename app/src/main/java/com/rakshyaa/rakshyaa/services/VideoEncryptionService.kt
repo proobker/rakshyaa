@@ -31,6 +31,10 @@ class VideoEncryptionService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val securePreferences: SecurePreferences
 ) {
+    init {
+        // Initialize encryption key on service creation
+        initializeEncryptionKey()
+    }
 
     companion object {
         private const val VIDEO_KEY_ALIAS = "rakshyaa_video_encryption_key"
@@ -69,7 +73,7 @@ class VideoEncryptionService @Inject constructor(
                 keyGenerator.generateKey()
             }
         } catch (e: Exception) {
-            e.printStackThrow RuntimeException("Failed to initialize encryption key", e)
+            throw RuntimeException("Failed to initialize encryption key", e)
         }
     }
 

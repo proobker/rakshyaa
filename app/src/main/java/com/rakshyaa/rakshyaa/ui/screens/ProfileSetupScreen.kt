@@ -98,7 +98,7 @@ private fun ProfileSetupFormContent(
         // App Logo / Icon
         Icon(
             imageVector = Icons.Default.ShieldCheck,
-            contentDescription = null,
+            contentDescription = "Rakshyaa app logo",
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .size(80.dp)

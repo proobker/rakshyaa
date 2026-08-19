@@ -89,7 +89,7 @@ private fun SignupFormContent(
         // App Logo / Icon
         Icon(
             imageVector = Icons.Default.ShieldCheck,
-            contentDescription = null,
+            contentDescription = "Rakshyaa app logo",
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .size(80.dp)
@@ -142,7 +142,7 @@ private fun SignupFormContent(
             leadingIcon = {
                 Icon(
                     imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                    contentDescription = null,
+                    contentDescription = "Password visibility icon",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
@@ -173,7 +173,7 @@ private fun SignupFormContent(
             leadingIcon = {
                 Icon(
                     imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                    contentDescription = null,
+                    contentDescription = "Confirm password visibility icon",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },

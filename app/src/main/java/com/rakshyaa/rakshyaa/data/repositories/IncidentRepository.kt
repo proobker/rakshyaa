@@ -142,8 +142,8 @@ class IncidentRepository @Inject constructor(
                     .select("*")
                     .eq("user_id", userId)
                     .order("activated_at", ascending = false)
-                    .limit(limit.toString())
-                    .offset(offset.toString())
+                    .limit(limit)
+                    .offset(offset)
                     .execute()
 
                 val data = response.data as List<<Map<String, Any>>

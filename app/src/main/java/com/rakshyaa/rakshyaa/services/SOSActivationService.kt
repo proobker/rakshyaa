@@ -6,6 +6,9 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.net.Uri
@@ -28,7 +31,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinlinenumberassigned
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
 /**
@@ -56,6 +60,8 @@ class SOSActivationService @Inject constructor(
     private var sosStartTime: Long = 0
     private var coroutineScope: CoroutineScope? = null
     private var sosJob: Job? = null
+    private var sosLocationJob: Job? = null
+    private var currentIncidentId: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -78,8 +84,10 @@ class SOSActivationService @Inject constructor(
         // Start foreground service for SOS
         startForeground(SOS_NOTIFICATION_ID, buildSosNotification())
 
-        // Save incident to Supabase
-        saveSosIncident(isFalseAlarm)
+        // Save incident to Supabase and get the ID
+        CoroutineScope(Dispatchers.IO).launch {
+            currentIncidentId = saveSosIncident(isFalseAlarm)
+        }
 
         // Make emergency call if not a false alarm
         if (!isFalseAlarm) {
@@ -104,19 +112,19 @@ class SOSActivationService @Inject constructor(
         // Clean up coroutine scope
         coroutineScope?.cancel()
         sosJob?.cancel()
+        sosLocationJob?.cancel()
         coroutineScope = null
         sosJob = None
+        sosLocationJob = None
     }
 
-    private fun saveSosIncident(isFalseAlarm: Boolean) {
+    private suspend fun saveSosIncident(isFalseAlarm: Boolean): String? {
         val userId = securePreferences.getUserId()
         if (userId.isNullOrBlank()) {
             // User not logged in
-            return
+            return null
         }
-
-        coroutineScope = CoroutineScope(Dispatchers.Main)
-        sosJob = coroutineScope?.launch {
+        return withContext(Dispatchers.IO) {
             try {
                 val incidentData = mapOf(
                     "user_id" to userId,
@@ -127,7 +135,71 @@ class SOSActivationService @Inject constructor(
                 )
 
                 val response = incidentRepository.createIncident(incidentData)
-                // In a real implementation, we would use the incident ID for tracking
+                // Extract the ID from the response
+                val data = response.data as List<<Map<String, Any>>>
+                val incidentId = data[0]["id"] as String
+                incidentId
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
+    private fun saveSosLocation(location: Location) {
+        val userId = securePreferences.getUserId()
+        if (userId.isNullOrBlank()) {
+            // User not logged in
+            return
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Save SOS location - could be to a special table or with a flag
+                // For now, we'll use the same location_logs table but could add an sos_flag column
+                val sosLocationData = mapOf(
+                    "user_id" to userId,
+                    "latitude" to location.latitude,
+                    "longitude" to location.longitude,
+                    "accuracy" to location.accuracy,
+                    "timestamp" to System.currentTimeMillis(),
+                    "is_sos" to true // Indicate this is an SOS location update
+                )
+
+                locationRepository.saveSosLocation(sosLocationData)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun notifyAdminPortal() {
+        val userId = securePreferences.getUserId()
+        if (userId.isNullOrBlank()) {
+            // User not logged in
+            return
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Update the incident to notify admin portal
+                // In a real implementation, this could:
+                // 1. Update the incident record with a "admin_notified" flag
+                // 2. Create a notification record in a separate table
+                // 3. Trigger a Supabase edge function via real-time subscription
+                // 4. Send a push notification to admin devices
+
+                val incidentId = currentIncidentId ?: "unknown"
+                val adminNotificationData = mapOf(
+                    "user_id" to userId,
+                    "incident_id" to incidentId,
+                    "notified_at" to System.currentTimeMillis(),
+                    "status" to "pending"
+                )
+
+                // For now, we'll just log that notification would be sent
+                // In a real app, you'd call a repository method to save this notification
+                Timber.tag("SOSActivationService").d("Admin portal notification would be sent for user $userId with incident $incidentId")
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -145,22 +217,54 @@ class SOSActivationService @Inject constructor(
             return
         }
 
+        // Get emergency numbers for the current location
+        val emergencyNumbers = telephonyManager.emergencyNumbers
         val callIntent = Intent(Intent.ACTION_CALL)
-        callIntent.data = Uri.parse("tel:911") // Emergency number - in real app, this would be configurable
+
+        if (emergencyNumbers.isNotEmpty()) {
+            // Use the first emergency number from the list
+            callIntent.data = Uri.parse("tel:${emergencyNumbers[0].number}")
+        } else {
+            // Fallback to 911 if no emergency numbers are available
+            callIntent.data = Uri.parse("tel:911")
+        }
+
         callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(callIntent)
     }
 
     private fun startSosLocationUpdates() {
-        // In a real implementation, this would integrate with LocationTrackingService
-        #TODO: Implement more frequent location updates during SOS
+        // Start more frequent location updates during SOS (every 30 seconds)
+        if (sosLocationJob != null) {
+            // Already running
+            return
+        }
+
+        sosLocationJob = CoroutineScope(Dispatchers.IO).launch {
+            while (isSosActive) {
+                try {
+                    // Get last known location
+                    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                    if (ActivityCompat.checkSelfPermission(
+                            context,
+                            android.Manifest.permission.ACCESS_FINE_LOCATION
+                        ) == PackageManager.PERMISSION_GRANTED) {
+                        val lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                        if (lastKnownLocation != null) {
+                            // Save location with SOS flag or to a special SOS location table
+                            saveSosLocation(lastKnownLocation)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                // Wait 30 seconds before next update during SOS
+                delay(30 * 1000)
+            }
+        }
     }
 
-    private fun notifyAdminPortal() {
-        // In a real implementation, this would trigger a Supabase edge function
-        #TODO: Implement admin portal notification via Supabase real-time or edge function
-    }
-
+    
     private fun buildSosNotification(): Notification {
         val intent = Intent(this, HomeScreenActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP

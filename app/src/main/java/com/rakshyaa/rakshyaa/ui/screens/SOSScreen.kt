@@ -61,8 +61,8 @@ class SOSActivity : ComponentActivity() {
 fun SOScreen(
     onNavigateToHome: () -> Unit,
     sosViewModel: SOSViewModel = hiltViewModel(),
-    authRepository: AuthRepository = System.getInstance(),
-    securePreferences: SecurePreferences = System.getInstance()
+    authRepository: AuthRepository = hiltViewModel(),
+    securePreferences: SecurePreferences = hiltViewModel()
 ) {
     val uiState by sosViewModel.uiState.collectAsState()
     val isSosActive by remember { mutableStateOf(false) }
@@ -124,7 +124,7 @@ private fun SosInactiveContent(
         // SOS Icon
         Icon(
             imageVector = Icons.Default.ErrorOutline,
-            contentDescription = null,
+            contentDescription = "SOS icon",
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier
                 .size(100.dp)
@@ -162,12 +162,13 @@ private fun SosInactiveContent(
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
+                    contentDescription = "Activating SOS"
                 )
             } else {
                 Icon(
                     imageVector = Icons.Default.ErrorOutline,
-                    contentDescription = null,
+                    contentDescription = "Activate SOS",
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(20.dp)
                 )
@@ -202,7 +203,7 @@ private fun SosActivatingContent(
         // SOS Icon with pulse animation
         Icon(
             imageVector = Icons.Default.ErrorOutline,
-            contentDescription = null,
+            contentDescription = "SOS activating icon",
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier
                 .size(80.dp)
@@ -274,7 +275,7 @@ private fun SosActiveContent(
         // SOS Icon with pulse animation
         Icon(
             imageVector = Icons.Default.Error,
-            contentDescription = null,
+            contentDescription = "SOS active icon",
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier
                 .size(100.dp)
@@ -353,7 +354,7 @@ private fun SosActiveContent(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = null,
+                contentDescription = "Deactivate SOS close icon",
                 tint = MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier.size(20.dp)
             )
@@ -389,7 +390,7 @@ private fun StatusIndicator(
         // Status Icon
         Icon(
             imageVector = Icons.Default.CheckCircle,
-            contentDescription = null,
+            contentDescription = "Status indicator",
             tint = color,
             modifier = Modifier.size(24.dp)
         )
@@ -432,7 +433,7 @@ private fun startActivationCountdown() {
         countdownSeconds = (totalSeconds - target).toInt()
         if (target == 0f) {
             // Countdown finished - activate SOS
-            // This would actually trigger SOS activation
+            sosViewModel.activateSos()
         }
     }
 

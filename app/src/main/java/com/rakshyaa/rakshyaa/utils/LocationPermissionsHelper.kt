@@ -2,26 +2,63 @@ package com.rakshyaa.rakshyaa.utils
 
 import android.Manifest
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.activity.result.ActivityResultCallback
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.rakshyaa.rakshyaa.R
+import dagger.hilt.android.androidContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Helper class for managing location permissions at runtime
+ * Helper class for managing location permissions at runtime using Activity Result API
  */
 @Singleton
 class LocationPermissionsHelper @Inject constructor(
-    private val context: Context
+    @androidContext private val context: Context
 ) {
 
-    companion object {
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
-    }
+    // Activity Result API for requesting permissions
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            // Check if all requested permissions were granted
+            val allGranted = permissions.all { (_, granted) -> granted }
+
+            if (allGranted) {
+                onPermissionsGranted?.invoke()
+            } else {
+                // Check if any permission was permanently denied
+                val shouldShowRationale = permissions.any { (permission, granted) ->
+                    !granted &&
+                    context is Activity &&
+                    ActivityCompat.shouldShowRequestPermissionRationale(
+                        context as Activity,
+                        permission
+                    )
+                }
+
+                if (!shouldShowRationale) {
+                    // User has denied permissions and checked "Don't ask again"
+                    showPermissionRationaleExplanation(
+                        onGoToSettings = { /* Open app settings */ },
+                        onCancel = onPermissionsDenied
+                    )
+                } else {
+                    // User denied permissions but might grant if asked again with explanation
+                    onPermissionsDenied?.invoke()
+                }
+            }
+        }
+
+    // Callbacks for permission results
+    private var onPermissionsGranted: (() -> Unit)? = null
+    private var onPermissionsDenied: (() -> Unit)? = null
 
     /**
      * Check if all required location permissions are granted
@@ -46,11 +83,16 @@ class LocationPermissionsHelper @Inject constructor(
     }
 
     /**
-     * Request location permissions from the user
+     * Request location permissions from the user using Activity Result API
      */
-    fun requestLocationPermissions(activity: Activity,
-                                   onPermissionsGranted: () -> Unit,
-                                   onPermissionsDenied: () -> Unit) {
+    fun requestLocationPermissions(
+        onPermissionsGranted: () -> Unit,
+        onPermissionsDenied: () -> Unit
+    ) {
+        // Store callbacks for use in the activity result handler
+        this.onPermissionsGranted = onPermissionsGranted
+        this.onPermissionsDenied = onPermissionsDenied
+
         val permissionsToRequest = mutableListOf<String>()
 
         // Check each permission and add to request list if not granted
@@ -85,58 +127,8 @@ class LocationPermissionsHelper @Inject constructor(
             // All permissions already granted
             onPermissionsGranted()
         } else {
-            // Request the permissions
-            ActivityCompat.requestPermissions(
-                activity,
-                permissionsToRequest.toTypedArray(),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
-
-            // Store the callbacks for use in onRequestPermissionsResult
-            // In a real implementation, you would use the Activity Result API
-            #TODO: Implement proper callback handling with Activity Result API
-        }
-    }
-
-    /**
-     * Handle the result of a location permission request
-     * This should be called from the Activity's onRequestPermissionsResult method
-     */
-    fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray,
-        onPermissionsGranted: () -> Unit,
-        onPermissionsDenied: () -> Unit
-    ) {
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            // Check if all requested permissions were granted
-            val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
-
-            if (allGranted) {
-                onPermissionsGranted()
-            } else {
-                // Check if any permission was permanently denied
-                val shouldShowRationale = permissions.mapIndexed { index, permission ->
-                    index to grantResults[index]
-                }.filter { (_, result) -> result == PackageManager.PERMISSION_DENIED }
-                    .any { (permission, _) ->
-                        ActivityCompat.shouldShowRequestPermissionRationale(
-                            (context as Activity), permission
-                        )
-                    }
-
-                if (!shouldShowRationale) {
-                    // User has denied permissions and checked "Don't ask again"
-                    showPermissionRationaleExplanation(
-                        onGoToSettings = { /* Open app settings */ },
-                        onCancel = onPermissionsDenied
-                    )
-                } else {
-                    // User denied permissions but might grant if asked again with explanation
-                    onPermissionsDenied()
-                }
-            }
+            // Request the permissions using Activity Result API
+            requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
         }
     }
 
@@ -147,8 +139,19 @@ class LocationPermissionsHelper @Inject constructor(
         onGoToSettings: () -> Unit,
         onCancel: () -> Unit
     ) {
-        #TODO: Implement a dialog explaining why location permissions are needed
-        #For now, just call the callbacks directly
+        // If we have an Activity context, show a Toast with explanation
+        if (context is Activity) {
+            val activity = context as Activity
+            Toast.makeText(
+                activity,
+                "Location permissions are needed for core safety features. Please grant them in Settings.",
+                Toast.LENGTH_LONG
+            ).show()
+        } else {
+            // Log a warning if we don't have an Activity context
+            android.util.Log.w("LocationPermissionsHelper", "Cannot show permission rationale: no Activity context available")
+        }
+        // Proceed with the cancel action (user will need to go to settings manually)
         onCancel()
     }
 

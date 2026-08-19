@@ -24,6 +24,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorJob
 import kotlinlinenumberassigned
 
 /**
@@ -117,7 +118,7 @@ class EmergencyContactsService @Inject constructor(
         startForeground(NOTIFICATION_ID, buildNotification("Emergency Contacts Service Active"))
 
         // Set up coroutine scope for emergency contacts service logic
-        coroutineScope = CoroutineScope(Dispatchers.Main)
+        coroutineScope = CoroutineScope(Dispatchers.IO + supervisorJob())
         contactsJob = coroutineScope?.launch {
             #TODO: Load emergency contacts and cache them if needed
             #For now, we'll rely on the repository for direct access
@@ -167,7 +168,7 @@ class EmergencyContactsService @Inject constructor(
 
                 android.util.Log.i("EmergencyContactsService", "Added emergency contact: $name")
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("EmergencyContactsService", "Failed to add emergency contact", e)
             }
         }
     }
@@ -202,7 +203,7 @@ class EmergencyContactsService @Inject constructor(
 
                 android.util.Log.i("EmergencyContactsService", "Updated emergency contact: $contactId")
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("EmergencyContactsService", "Failed to update emergency contact", e)
             }
         }
     }
@@ -222,7 +223,7 @@ class EmergencyContactsService @Inject constructor(
 
                 android.util.Log.i("EmergencyContactsService", "Removed emergency contact: $contactId")
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("EmergencyContactsService", "Failed to remove emergency contact", e)
             }
         }
     }
@@ -246,7 +247,7 @@ class EmergencyContactsService @Inject constructor(
 
                 android.util.Log.i("EmergencyContactsService", "Escalated missed check-in $checkInId for user $userId")
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("EmergencyContactsService", "Failed to escalate missed check-in", e)
             }
         }
     }
@@ -272,7 +273,7 @@ class EmergencyContactsService @Inject constructor(
 
                 #TODO: Actually send notifications to contacts via preferred method (SMS, push notification, etc.)
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("EmergencyContactsService", "Failed to send SOS alert to contacts", e)
             }
         }
     }
@@ -306,7 +307,8 @@ class EmergencyContactsService @Inject constructor(
             // Return as Base64 for easy storage
             android.util.Base64.encodeToString(combined, android.util.Base64.NO_WRAP)
         } catch (e: Exception) {
-            throw RuntimeException("Failed to encrypt sensitive data: ${e.message}", e)
+            android.util.Log.e("EmergencyContactsService", "Failed to encrypt sensitive data", e)
+            throw RuntimeException("Failed to encrypt sensitive data", e)
         }
     }
 
@@ -334,7 +336,8 @@ class EmergencyContactsService @Inject constructor(
             val decryptedBytes = cipher.doFinal(encryptedBytes)
             return String(decryptedBytes, Charsets.UTF_8)
         } catch (e: Exception) {
-            throw RuntimeException("Failed to decrypt sensitive data: ${e.message}", e)
+            android.util.Log.e("EmergencyContactsService", "Failed to decrypt sensitive data", e)
+            throw RuntimeException("Failed to decrypt sensitive data", e)
         }
     }
 
@@ -347,7 +350,8 @@ class EmergencyContactsService @Inject constructor(
             keyStore.load(null)
             keyStore.getKey(CONTACT_KEY_ALIAS, null) as javax.crypto.SecretKey
         } catch (e: Exception) {
-            throw RuntimeException("Failed to get secret key from keystore: ${e.message}", e)
+            android.util.Log.e("EmergencyContactsService", "Failed to get secret key from keystore", e)
+            throw RuntimeException("Failed to get secret key from keystore", e)
         }
     }
 
@@ -381,7 +385,8 @@ class EmergencyContactsService @Inject constructor(
                 keyGenerator.generateKey()
             }
         } catch (e: Exception) {
-            e.printStackThrow RuntimeException("Failed to initialize encryption key: ${e.message}", e)
+            android.util.Log.e("EmergencyContactsService", "Failed to initialize encryption key", e)
+            throw RuntimeException("Failed to initialize encryption key", e)
         }
     }
 

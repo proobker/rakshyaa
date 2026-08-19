@@ -24,9 +24,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.system.System
 import java.util.concurrent.TimeUnit
+import java.util.UUID
 
 /**
  * Foreground service for tracking user location with periodic updates to Supabase
@@ -51,6 +53,11 @@ class LocationTrackingService @Inject constructor(
     private lateinit var locationListener: LocationListener
     private var coroutineScope: CoroutineScope? = null
     private var isTracking = false
+    // Queue for batching location updates
+    private val locationQueue = mutableListOf<LocationRecord>()
+    private var flushJob: Job? = null
+    private const val BATCH_FLUSH_INTERVAL_MS = 2 * 60 * 1000L // 2 minutes
+    private const val MAX_BATCH_SIZE = 10
 
     override fun onCreate() {
         super.onCreate()
@@ -88,14 +95,15 @@ class LocationTrackingService @Inject constructor(
             )
         }
 
-        // Set up coroutine scope for periodic updates
+        // Set up coroutine scope for periodic updates and batching
         coroutineScope = CoroutineScope(Dispatchers.Main)
-        coroutineScope?.launch {
-            // Initial location update if we have last known location
-            val lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-            if (lastKnownLocation != null) {
-                saveLocationToSupabase(lastKnownLocation)
-            }
+        // Start the batch flush job
+        startLocationBatchFlush()
+
+        // Add initial location if available
+        val lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+        if (lastKnownLocation != null) {
+            addLocationToQueue(lastKnownLocation)
         }
     }
 
@@ -113,13 +121,17 @@ class LocationTrackingService @Inject constructor(
         // Clean up coroutine scope
         coroutineScope?.cancel()
         coroutineScope = null
+
+        // Clean up flush job
+        flushJob?.cancel()
+        flushJob = null
     }
 
     private fun setupLocationListener() {
         locationListener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
-                // Save location to Supabase
-                saveLocationToSupabase(location)
+                // Add location to queue for batching
+                addLocationToQueue(location)
             }
 
             override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {
@@ -180,6 +192,58 @@ class LocationTrackingService @Inject constructor(
             channel.description = getString(R.string.location_tracking_channel_description)
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun addLocationToQueue(location: Location) {
+        val userId = securePreferences.getUserId()
+        if (userId.isNullOrBlank()) {
+            // User not logged in, don't queue location
+            return
+        }
+
+        val locationRecord = LocationRecord(
+            id = java.util.UUID.randomUUID().toString(),
+            userId = userId!!,
+            latitude = location.latitude,
+            longitude = location.longitude,
+            accuracy = location.accuracy,
+            timestamp = System.currentTimeMillis(),
+            createdAt = System.currentTimeMillis()
+        )
+
+        synchronized(locationQueue) {
+            locationQueue.add(locationRecord)
+            if (locationQueue.size >= MAX_BATCH_SIZE) {
+                flushLocationQueue()
+            }
+        }
+    }
+
+    private fun startLocationBatchFlush() {
+        flushJob = coroutineScope?.launch {
+            while (isTracking) {
+                delay(BATCH_FLUSH_INTERVAL_MS)
+                flushLocationQueue()
+            }
+        }
+    }
+
+    private fun flushLocationQueue() {
+        val toFlush = synchronized(locationQueue) {
+            val toFlush = locationQueue.toList()
+            locationQueue.clear()
+            toFlush
+        }
+
+        if (toFlush.isEmpty()) return
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                locationRepository.saveLocationsBatch(toFlush)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

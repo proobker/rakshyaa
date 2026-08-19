@@ -10,7 +10,7 @@ This is a women's safety Android application called "rakshyaa" that uses Supabas
 
 ### Prerequisites
 - Android Studio or equivalent Android development environment
-- Node.js (for Supabase CLI and potential web components)
+- Node.js (for Supabase CLI and admin portal development)
 - Supabase account and project (configured via .mcp.json)
 - Git for version control
 
@@ -18,7 +18,7 @@ This is a women's safety Android application called "rakshyaa" that uses Supabas
 1. Clone the repository
 2. Ensure Supabase MCP server is configured (see .mcp.json)
 3. Install Android SDK and required build tools
-4. For any web/admin components, install Node.js dependencies
+4. For any web/admin components, install Node.js dependencies (`cd admin && npm install`)
 
 ## Common Development Commands
 
@@ -34,7 +34,12 @@ Since this project uses Supabase as the primary backend:
 - Run on emulator/device: `./gradlew installDebug`
 - Linting: `./gradlew lint`
 
-### General Commands
+### Admin Portal Development
+- Start development server: `cd admin && npm run dev`
+- Build for production: `cd admin && npm run build`
+- Start production server: `cd admin && npm run start`
+
+## General Commands
 - Initialize git repository: `git init`
 - Commit changes: `git add . && git commit -m "message"`
 - Check status: `git status`
@@ -67,7 +72,21 @@ Since this project uses Supabase as the primary backend:
    - Managing safe places database
    - Accessing legal resources and support
 
-### Key Features Implementation
+### Project Structure
+```
+rakshyaa/
+├── app/                    # Android application source
+├── admin/                  # Admin portal (Next.js/Vercel)
+├── docs/                   # Implementation documentation
+├── .mcp.json              # Supabase MCP configuration
+├── CLAUDE.md              # Claude Code guidance for this repository
+├── LOCAL_SETUP.md         # Local setup instructions
+├── LICENSE                # MIT License
+├── build.gradle           # App-level Gradle configuration
+└── settings.gradle        # Project-level Gradle configuration
+```
+
+## Key Features Implementation
 - **Location Tracking**: Foreground service with periodic GPS updates to Supabase
 - **SOS System**: Voice-activated trigger, smart calling to 911 + admin notification
 - **Video Upload**: Client-side encryption before upload to Supabase Storage
