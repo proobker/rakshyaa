@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_primary">#6750A4</color>
+    <color name="brand_on_primary">#FFFFFF</color>
+    <color name="brand_secondary">#625B71</color>
+    <color name="brand_tertiary">#7D5260</color>
+    <color name="brand_error">#B3261E</color>
+    <color name="brand_safety">#00695C</color>
+    <color name="brand_safety_secondary">#0288D1</color>
+    <color name="brand_warning">#EF6C00</color>
+    <color name="brand_success">#2E7D32</color>
+    <color name="brand_background">#FFFBFE</color>
+    <color name="brand_surface">#FFFBFE</color>
+    <color name="brand_on_surface">#1C1B1F</color>
+
+    <!-- Launcher -->
+    <color name="ic_launcher_background">#6750A4</color>
+</resources>

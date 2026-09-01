@@ -2,15 +2,17 @@ package com.rakshyaa.rakshyaa.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.core.content.isInstanceOf
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKeys
+import androidx.security.crypto.MasterKey
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Secure preferences handler using EncryptedSharedPreferences
- * Stores sensitive data like authentication tokens securely
+ * Secure preferences handler using EncryptedSharedPreferences.
+ * Stores sensitive data like authentication tokens securely.
  */
 @Singleton
 class SecurePreferences @Inject constructor(
@@ -27,125 +29,69 @@ class SecurePreferences @Inject constructor(
     }
 
     private val encryptedSharedPreferences: SharedPreferences by lazy {
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
         EncryptedSharedPreferences.create(
-            PREFS_NAME,
-            masterKeyAlias,
             context,
+            PREFS_NAME,
+            masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
     }
 
-    /**
-     * Save access token
-     */
     fun saveAccessToken(token: String) {
-        encryptedSharedPreferences.edit()
-            .putString(KEY_ACCESS_TOKEN, token)
-            .apply()
+        encryptedSharedPreferences.edit().putString(KEY_ACCESS_TOKEN, token).apply()
     }
 
-    /**
-     * Get access token
-     */
-    fun getAccessToken(): String? {
-        return encryptedSharedPreferences.getString(KEY_ACCESS_TOKEN, null)
-    }
+    fun getAccessToken(): String? =
+        encryptedSharedPreferences.getString(KEY_ACCESS_TOKEN, null)
 
-    /**
-     * Save refresh token
-     */
     fun saveRefreshToken(token: String) {
-        encryptedSharedPreferences.edit()
-            .putString(KEY_REFRESH_TOKEN, token)
-            .apply()
+        encryptedSharedPreferences.edit().putString(KEY_REFRESH_TOKEN, token).apply()
     }
 
-    /**
-     * Get refresh token
-     */
-    fun getRefreshToken(): String? {
-        return encryptedSharedPreferences.getString(KEY_REFRESH_TOKEN, null)
-    }
+    fun getRefreshToken(): String? =
+        encryptedSharedPreferences.getString(KEY_REFRESH_TOKEN, null)
 
-    /**
-     * Save user ID
-     */
     fun saveUserId(userId: String) {
-        encryptedSharedPreferences.edit()
-            .putString(KEY_USER_ID, userId)
-            .apply()
+        encryptedSharedPreferences.edit().putString(KEY_USER_ID, userId).apply()
     }
 
-    /**
-     * Get user ID
-     */
-    fun getUserId(): String? {
-        return encryptedSharedPreferences.getString(KEY_USER_ID, null)
-    }
+    fun getUserId(): String? =
+        encryptedSharedPreferences.getString(KEY_USER_ID, null)
 
-    /**
-     * Save user email
-     */
     fun saveUserEmail(email: String) {
-        encryptedSharedPreferences.edit()
-            .putString(KEY_USER_EMAIL, email)
-            .apply()
+        encryptedSharedPreferences.edit().putString(KEY_USER_EMAIL, email).apply()
     }
 
-    /**
-     * Get user email
-     */
-    fun getUserEmail(): String? {
-        return encryptedSharedPreferences.getString(KEY_USER_EMAIL, null)
-    }
+    fun getUserEmail(): String? =
+        encryptedSharedPreferences.getString(KEY_USER_EMAIL, null)
 
-    /**
-     * Save login state
-     */
     fun saveLoginState(isLoggedIn: Boolean) {
-        encryptedSharedPreferences.edit()
-            .putBoolean(KEY_IS_LOGGED_IN, isLoggedIn)
-            .apply()
+        encryptedSharedPreferences.edit().putBoolean(KEY_IS_LOGGED_IN, isLoggedIn).apply()
     }
 
-    /**
-     * Get login state
-     */
-    fun isLoggedIn(): Boolean {
-        return encryptedSharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
-    }
+    fun isLoggedIn(): Boolean =
+        encryptedSharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
 
-    /**
-     * Clear all secure preferences (logout)
-     */
     fun clear() {
         encryptedSharedPreferences.edit().clear().apply()
     }
 
-    /**
-     * Save multiple tokens at once (useful for login)
-     */
     fun saveAuthCredentials(
         accessToken: String,
         refreshToken: String? = null,
         userId: String? = null,
         userEmail: String? = null
     ) {
-        edit {
-            putString(KEY_ACCESS_TOKEN, accessToken)
-            refreshToken?.let { putString(KEY_REFRESH_TOKEN, it) }
-            userId?.let { putString(KEY_USER_ID, it) }
-            userEmail?.let { putString(KEY_USER_EMAIL, it) }
-            putBoolean(KEY_IS_LOGGED_IN, true)
-        }
-    }
-
-    /**
-     * Edit helper for secure preferences
-     */
-    private fun edit(action: SharedPreferences.Editor.() -> Unit) {
-        encryptedSharedPreferences.edit().apply(action).apply()
+        val editor = encryptedSharedPreferences.edit()
+        editor.putString(KEY_ACCESS_TOKEN, accessToken)
+        refreshToken?.let { editor.putString(KEY_REFRESH_TOKEN, it) }
+        userId?.let { editor.putString(KEY_USER_ID, it) }
+        userEmail?.let { editor.putString(KEY_USER_EMAIL, it) }
+        editor.putBoolean(KEY_IS_LOGGED_IN, true)
+        editor.apply()
     }
 }

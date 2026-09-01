@@ -1,175 +1,114 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for AI coding agents (Claude Code, opencode, etc.) working in this repository.
 
 ## Project Overview
 
-This is a women's safety Android application called "rakshyaa" that uses Supabase as the backend for storage, authentication, and real-time features. The app includes features like location tracking, SOS alerts, encrypted video uploads, ride monitoring, safe places discovery, check-ins, and more.
+**Rakshyaa** is a women's safety Android application. The backend is a self-hosted
+Node.js + TypeScript (Express) service. The app uses **Google sign-in (Credential
+Manager)** whose ID token is verified by our own backend, which then issues its own
+session JWT. All sensitive app data is **encrypted on-device** (Android Keystore) and
+optionally backed up to the backend as **opaque encrypted blobs** — the server never
+sees plaintext.
 
-## Development Setup
+The architecture deliberately does **not** use Supabase. If you see references to
+Supabase, `io.github.jan.supabase`, `io.github.jmnarloch`, or the `SupabaseProvider`
+class, they are stale and should be removed.
 
-### Prerequisites
-- Android Studio or equivalent Android development environment
-- Node.js (for Supabase CLI and admin portal development)
-- Supabase account and project (configured via .mcp.json)
-- Git for version control
+## Repository Layout
 
-### Environment Setup
-1. Clone the repository
-2. Ensure Supabase MCP server is configured (see .mcp.json)
-3. Install Android SDK and required build tools
-4. For any web/admin components, install Node.js dependencies (`cd admin && npm install`)
-
-## Common Development Commands
-
-### Supabase Integration
-Since this project uses Supabase as the primary backend:
-- Supabase MCP server is configured at: https://mcp.supabase.com/mcp?project_ref=glbaaslnwmodgpxqiuwn&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching
-- Use Supabase for authentication, database, storage, and edge functions
-- Refer to Supabase documentation for schema design, migrations, and security
-
-### Android Development
-- Build the app: Use Android Studio or Gradle wrapper (`./gradlew assembleDebug`)
-- Run tests: `./gradlew test`
-- Run on emulator/device: `./gradlew installDebug`
-- Linting: `./gradlew lint`
-
-### Admin Portal Development
-- Start development server: `cd admin && npm run dev`
-- Build for production: `cd admin && npm run build`
-- Start production server: `cd admin && npm run start`
-
-## General Commands
-- Initialize git repository: `git init`
-- Commit changes: `git add . && git commit -m "message"`
-- Check status: `git status`
-- View logs: `adb logcat` (for Android debugging)
-
-## Code Architecture & Structure
-
-### High-Level Architecture
-1. **Android App (Client)** - Native Android application with:
-   - Foreground service for continuous location tracking
-   - Encrypted local storage for sensitive data
-   - Camera integration for front/back video capture
-   - Voice activation module for hands-free SOS
-   - GPS logging and route deviation analysis
-   - Geofencing for safe places and check-ins
-   - Emergency contact management with encryption
-   - Legal resources section
-
-2. **Supabase Backend** - Provides:
-   - Authentication (email/password, social login)
-   - Database (PostgreSQL) for user profiles, contacts, incidents, etc.
-   - Storage for encrypted video uploads
-   - Edge Functions for custom logic (SOS processing, route analysis)
-   - Real-time subscriptions for live location tracking
-   - Security policies (RLS) for data protection
-
-3. **Admin Portal** (Vercel-hosted) - Web interface for:
-   - Monitoring active users and their locations
-   - Viewing incident reports and SOS alerts
-   - Managing safe places database
-   - Accessing legal resources and support
-
-### Project Structure
 ```
-rakshyaa/
-├── app/                    # Android application source
-├── admin/                  # Admin portal (Next.js/Vercel)
-├── docs/                   # Implementation documentation
-├── .mcp.json              # Supabase MCP configuration
-├── CLAUDE.md              # Claude Code guidance for this repository
-├── LOCAL_SETUP.md         # Local setup instructions
-├── LICENSE                # MIT License
-├── build.gradle           # App-level Gradle configuration
-└── settings.gradle        # Project-level Gradle configuration
+rakshyaa/     # Native Android app (Kotlin, Jetpack Compose, Hilt)
+backend/      # Node.js + TypeScript + Express + SQLite (own backend)
+admin/        # Existing Next.js admin portal (out of scope for APK; reads via API key)
 ```
 
-## Key Features Implementation
-- **Location Tracking**: Foreground service with periodic GPS updates to Supabase
-- **SOS System**: Voice-activated trigger, smart calling to 911 + admin notification
-- **Video Upload**: Client-side encryption before upload to Supabase Storage
-- **Ride Monitoring**: GPS logging with route deviation calculation using Haversine formula
-- **Safe Places**: Geospatial queries against hospitals/police/fire stations dataset
-- **Check-ins**: Scheduled tasks with geofence validation and grace periods
-- **Fake Call**: Simulated incoming call interface for decoy scenarios
-- **Contacts**: Encrypted storage of emergency contact information with public keys
+## Backend (Node.js + TypeScript + Express)
 
-### Data Models (Supabase Schema)
-- `users`: Authentication and profile information
-- `emergency_contacts`: Contact details with optional encryption keys
-- `location_logs`: Timestamped GPS coordinates for tracking
-- `incidents`: SOS events with location, media, and status
-- `safe_places`: Predefined locations of hospitals, police stations, etc.
-- `check_ins`: Scheduled safety check-ins with response tracking
-- `ride_sessions`: Active monitoring sessions with route data
+Location: `backend/`
 
-## Best Practices
+- Framework: Express 4 + TypeScript (NodeNext modules).
+- **SQLite** via the built-in `node:sqlite` module (`DatabaseSync`). The package
+  `better-sqlite3` is intentionally NOT used (native build fails on Windows without
+  Visual Studio tooling).
+- `google-auth-library` verifies Google ID tokens (`verifyIdToken` with audience =
+  the configured web client id).
+- `jsonwebtoken` signs/verifies session JWTs.
+- Schema (`backend/src/db.ts`): `users`, `blobs` (encrypted-blob metadata),
+  `incidents`.
+- Encrypted media files stored under `backend/data/media/<userId>/`.
 
-### Security
-- Implement end-to-end encryption for sensitive media (video/audio)
-- Use Supabase Row Level Security (RLS) extensively
-- Store encryption keys securely using Android Keystore
-- Validate and sanitize all inputs to prevent injection attacks
-- Use HTTPS for all network communications
+### Commands (run inside `backend/`)
+| Action | Command |
+| --- | --- |
+| Install deps | `npm install` |
+| Run (dev, watch) | `npm run dev` |
+| Typecheck | `npm run typecheck` (`tsc --noEmit`) |
+| Build | `npm run build` |
+| Run (built) | `npm start` |
 
-### Performance
-- Optimize foreground service to minimize battery drain
-- Use efficient geoqueries with proper indexing in PostGIS
-- Implement caching for frequently accessed safe places data
-- Compress and chunk video uploads for better reliability
-- Use WorkManager for background tasks where appropriate
+Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
+`JWT_SECRET`, `ADMIN_API_KEY`. `DATA_DIR` and `DB_PATH` have sensible defaults.
 
-### Testing
-- Write unit tests for business logic and encryption utilities
-- Instrumentation tests for Android components (services, receivers)
-- Test edge cases like network loss, GPS unavailability, low battery
-- Verify encryption/decryption workflows thoroughly
+### API surface
+- `GET /health`
+- `POST /auth/google` — body `{ idToken }` → `{ token, user }`
+- Auth-protected (`Authorization: Bearer <jwt>`):
+  - `GET /backup/me`
+  - `GET /backup` — list encrypted blob metadata
+  - `PUT /backup/data/:key`, `GET /backup/data/:key`, `DELETE /backup/data/:key`
+  - `PUT /backup/media/:id`, `GET /backup/media/:id`
+  - `POST /incidents`, `POST /incidents/:id/resolve`
+- API-key protected (`x-api-key: <ADMIN_API_KEY>`):
+  - `GET /incidents/admin/active`
 
-## Working with Supabase
+## Android App (`rakshyaa/`)
 
-### Schema Management
-- Use Supabase migrations for schema changes
-- Follow naming conventions: snake_case for tables and columns
-- Enable Row Level Security on all tables by default
-- Create appropriate indexes for geoqueries and frequent lookups
+- Kotlin 2.0.20, AGP 8.5.2, Jetpack Compose (BOM 2024.09.00), Hilt 2.52.
+- `compileSdk` 34, `minSdk` 24.
+- `android.nonTransitiveRClass=true` → resource references must be fully-qualified
+  (`com.rakshyaa.rakshyaa.R.string.x`) or explicitly imported. Do not write `R.xxx`.
+- Build config fields: `BACKEND_BASE_URL`, `GOOGLE_WEB_CLIENT_ID` come from
+  `app/build.gradle` buildConfigFields (and a `local.properties`-style properties file).
 
-### Authentication
-- Implement email/password and social login providers
-- Use Supabase Auth UI or custom implementation
-- Handle token refresh and session management properly
-- Link authentication with user profiles in database
+### Commands (run inside `rakshyaa/`)
+| Action | Command |
+| --- | --- |
+| Build debug APK | `./gradlew assembleDebug` |
+| Output | `app/build/outputs/apk/debug/app-debug.apk` |
+| Tests | `./gradlew test` |
+| Lint | `./gradlew lint` |
 
-### Storage
-- Store encrypted videos in Supabase Storage buckets
-- Implement client-side encryption before upload
-- Use signed URLs for secure, time-limited access
-- Consider implementing video transcoding for different qualities
+### Key packages
+- `data/auth/` — Google sign-in (Credential Manager) + backend token exchange.
+- `data/network/` — OkHttp REST client wired to the backend.
+- `data/local/` — `SecurePreferences` (EncryptedSharedPreferences) and encrypted
+  file/datastore helpers.
+- `utils/CryptoManager` — AES-GCM keyed from Android Keystore.
+- `data/repositories/` — per-feature repositories (contacts, rides, check-ins, ...).
+- `services/` — foreground services (SOS, location, ride monitoring, check-in, fake call).
+- `viewmodels/`, `ui/` — Compose viewmodels, screens, navigation, theme.
 
-### Edge Functions
-- Deploy custom logic for SOS processing, location analysis
-- Use for webhooks to external services (emergency services)
-- Implement rate limiting and input validation
-- Log function executions for monitoring and debugging
+### Google OAuth notes
+- The app uses Credential Manager + `GetGoogleIdOption` with a **server client id**
+  (web client id) to obtain a Google ID token, which is sent to the backend
+  (`POST /auth/google`). The backend verifies it and returns a session JWT.
+- For this to work on a device, the Android package name (`com.rakshyaa.rakshyaa`)
+  **and its SHA-1 fingerprint** must be registered in Google Cloud Console against the
+  OAuth client. The `GOOGLE_WEB_CLIENT_ID` and `BACKEND_BASE_URL` build-config fields
+  must point at valid values.
 
-## Getting Started
+## Security model
+- All sensitive data (emergency contacts, incident logs, videos) is encrypted on the
+  device with AES-GCM, keys held in Android Keystore.
+- Backend backup endpoints store only opaque encrypted blobs; the server does not
+  have the keys and treats payloads as bytes.
+- Backend verifies the Google ID token itself; clients never trust a token without
+  backend confirmation.
 
-1. Review the README.md for feature requirements
-2. Set up Android development environment
-3. Connect to Supabase project via MCP configuration
-4. Begin implementing core authentication and user profile features
-5. Develop location tracking service with battery optimization
-6. Implement SOS triggering mechanism
-7. Build encrypted media handling
-8. Create admin portal interface (ifweb-based)
-9. Add remaining features incrementally
-10. Test thoroughly on various Android versions and devices
-
-## Troubleshooting
-
-- Check Android Studio logs for build/runtime issues
-- Use Supabase dashboard to monitor database queries and auth events
-- Verify network connectivity and API endpoints
-- Check encryption keys and Android Keystore availability
-- Monitor foreground service battery usage via Android Profiler
+## General rules for agents
+- Do not introduce Supabase dependencies.
+- Do not reintroduce `better-sqlite3`; use `node:sqlite`.
+- Follow existing code conventions (mimic nearby files).
+- After editing Android code, run `./gradlew compileDebugKotlin` or `assembleDebug`.
+- After editing backend code, run `npm run typecheck`.

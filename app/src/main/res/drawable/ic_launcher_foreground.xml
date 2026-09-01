@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple shield mark used as the launcher foreground -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30 L74,38 L74,54 C74,67 66,76 54,80 C42,76 34,67 34,54 L34,38 Z" />
+    <path
+        android:fillColor="#00F4C7"
+        android:pathData="M54,38 L66,43 L66,54 C66,62 61,68 54,71 C47,68 42,62 42,54 L42,43 Z" />
+</vector>

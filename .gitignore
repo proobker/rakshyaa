@@ -1,1 +1,11 @@
 local.properties
+supabase.properties
+backend.properties
+.gradle/
+build/
+app/build/
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/

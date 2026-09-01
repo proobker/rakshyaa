@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">Rakshyaa</string>
+
+    <!-- Auth / Login -->
+    <string name="login_welcome">Welcome to Rakshyaa</string>
+    <string name="login_subtitle">Your personal safety companion. Sign in to continue.</string>
+    <string name="email">Email</string>
+    <string name="enter_email">Enter your email</string>
+    <string name="password">Password</string>
+    <string name="enter_password">Enter your password</string>
+    <string name="invalid_email">Please enter a valid email address</string>
+    <string name="hide_password">Hide password</string>
+    <string name="show_password">Show password</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="sign_in">Sign In</string>
+    <string name="or">or</string>
+    <string name="google">Google</string>
+    <string name="facebook">Facebook</string>
+    <string name="apple">Apple</string>
+    <string name="dont_have_account">Don\'t have an account?</string>
+    <string name="sign_up">Sign Up</string>
+
+    <!-- Signup -->
+    <string name="signup_welcome">Create your account</string>
+    <string name="signup_subtitle">Join Rakshyaa and take control of your safety.</string>
+    <string name="confirm_password">Confirm password</string>
+    <string name="confirm_password_placeholder">Re-enter your password</string>
+    <string name="passwords_do_not_match">Passwords do not match</string>
+    <string name="already_have_account">Already have an account?</string>
+
+    <!-- Profile setup -->
+    <string name="profile_setup_welcome">Complete your profile</string>
+    <string name="profile_setup_subtitle">Tell us a bit about yourself so we can keep you safe.</string>
+    <string name="first_name">First name</string>
+    <string name="enter_first_name">Enter your first name</string>
+    <string name="last_name">Last name</string>
+    <string name="enter_last_name">Enter your last name</string>
+    <string name="phone_number">Phone number</string>
+    <string name="enter_phone_number">Enter your phone number</string>
+    <string name="save_profile">Save Profile</string>
+    <string name="skip_for_now">Skip for now</string>
+    <string name="profile_saved">Profile saved successfully</string>
+
+    <!-- Home -->
+    <string name="home_title">Rakshyaa</string>
+    <string name="home_subtitle">Choose an action</string>
+    <string name="home_sos">SOS</string>
+    <string name="home_sos_desc">Activate emergency</string>
+    <string name="home_track">Start Tracking</string>
+    <string name="home_track_desc">Share your location</string>
+    <string name="home_contacts">Emergency Contacts</string>
+    <string name="home_contacts_desc">Manage contacts</string>
+    <string name="home_safe_places">Safe Places</string>
+    <string name="home_safe_places_desc">Find help nearby</string>
+    <string name="home_legal">Legal Help</string>
+    <string name="home_legal_desc">Support resources</string>
+    <string name="sign_out">Sign Out</string>
+
+    <!-- SOS -->
+    <string name="sos_inactive_title">You are safe</string>
+    <string name="sos_inactive_description">If you are in danger, press SOS to immediately alert your emergency contacts and share your live location.</string>
+    <string name="active_sos">ACTIVE SOS</string>
+    <string name="activate_sos">ACTIVATE SOS</string>
+    <string name="deactivate_sos">Deactivate SOS</string>
+    <string name="learn_more_about_sos">Learn more</string>
+    <string name="sos_activating_title">SOS activating</string>
+    <string name="sos_activating_description">Activating in %1$d seconds…</string>
+    <string name="sos_active_title">SOS Active</string>
+    <string name="sos_active_description">Help has been alerted. Your live location is being shared.</string>
+    <string name="emergency_called">Emergency called</string>
+    <string name="location_sharing">Location sharing</string>
+    <string name="admin_notified">Admin notified</string>
+    <string name="sos_emergency_info">For immediate danger, call the emergency services in your area.</string>
+    <string name="deactivate_sos_confirmation_title">Deactivate SOS?</string>
+    <string name="deactivate_sos_confirmation_message">Are you sure you are safe? This will stop alerting your emergency contacts.</string>
+    <string name="yes_deactivate">Yes, I\'m safe</string>
+    <string name="no_keep_active">No, keep active</string>
+    <string name="cancel">Cancel</string>
+    <string name="sos_notification_channel_name">SOS alerts</string>
+    <string name="sos_notification_channel_description">Alerts shown while an SOS is active</string>
+
+    <!-- Tracking / Services -->
+    <string name="tracking_channel_name">Location tracking</string>
+    <string name="tracking_notification_title">Location tracking active</string>
+    <string name="tracking_notification_text">Your location is being shared with your trusted contacts.</string>
+</resources>
