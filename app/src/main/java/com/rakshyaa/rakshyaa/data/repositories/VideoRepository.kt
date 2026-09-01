@@ -1,203 +1,91 @@
 package com.rakshyaa.rakshyaa.data.repositories
 
-import com.rakshyaa.rakshyaa.data.SupabaseProvider
+import com.rakshyaa.rakshyaa.data.local.EncryptedLocalStore
+import com.rakshyaa.rakshyaa.data.models.VideoRecord
+import com.rakshyaa.rakshyaa.data.sync.SyncManager
 import com.rakshyaa.rakshyaa.services.VideoEncryptionService
-import io.github.jmnarloch.supabase.kaft.PostgrestException
-import io.github.jmnarloch.supabase.kaft.SupabaseClient
-import jakarta.inject.Inject
-import jakarta.inject.Singleton
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 import java.io.File
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
- * Repository for handling video operations with Supabase Storage and metadata storage
+ * Manages encrypted video recordings: videos are encrypted on-device
+ * ([VideoEncryptionService]) and their encrypted bytes are backed up to the backend
+ * as opaque blobs. Only video metadata is kept locally (encrypted).
  */
 @Singleton
 class VideoRepository @Inject constructor(
-    private val supabaseClient: SupabaseClient,
+    private val store: EncryptedLocalStore,
+    private val sync: SyncManager,
     private val videoEncryptionService: VideoEncryptionService
 ) {
+    private val json = Json { ignoreUnknownKeys = true }
+    private val listSerializer = ListSerializer(VideoRecord.serializer())
+    private val key = "videos"
 
-    companion object {
-        private const val VIDEO_BUCKET = "encrypted-videos"
-    }
-
-    /**
-     * Uploads an encrypted video to Supabase Storage
-     *
-     * @param userId The ID of the user uploading the video
-     * @param videoFile The original video file to be encrypted and uploaded
-     * @param videoType Type of video (e.g., "sos_incident", "ride_recording")
-     * @return The public URL of the uploaded video
-     * @throws Exception if upload fails
-     */
+    /** Encrypts [videoFile], records its metadata and backs up the encrypted blob. */
     suspend fun uploadEncryptedVideo(
         userId: String,
         videoFile: File,
         videoType: String = "general"
-    ): String {
-        return withContext(Dispatchers.IO) {
-            try {
-                // Step 1: Encrypt the video file
-                val encryptedFile = videoEncryptionService.encryptVideo(videoFile)
+    ): VideoRecord {
+        val encryptedFile = videoEncryptionService.encryptVideo(videoFile)
+        val id = UUID.randomUUID().toString()
+        val fileName = "${userId}_${videoType}_${System.currentTimeMillis()}.enc"
 
-                // Step 2: Generate a unique filename
-                val timestamp = System.currentTimeMillis()
-                val fileName = "${userId}_${videoType}_${timestamp}.enc"
+        val encryptedBytes = encryptedFile.readBytes()
+        sync.pushMedia(id, encryptedBytes)
+        encryptedFile.delete()
 
-                // Step 3: Upload the encrypted file to Supabase Storage
-                encryptedFile.inputStream().use { inputStream ->
-                    supabaseClient
-                        .storage
-                        .bucket(VIDEO_BUCKET)
-                        .upload(fileName, inputStream)
-                }
-
-                // Step 4: Get the public URL for the uploaded video
-                val videoUrl = supabaseClient
-                    .storage
-                    .bucket(VIDEO_BUCKET)
-                    .getPublicUrl(fileName)
-
-                // Step 5: Save video metadata to the database
-                saveVideoMetadata(
-                    userId = userId,
-                    videoUrl = videoUrl,
-                    videoType = videoType,
-                    fileName = fileName,
-                    uploadedAt = timestamp
-                )
-
-                // Step 6: Clean up the encrypted temporary file
-                encryptedFile.delete()
-
-                videoUrl
-            } catch (e: PostgrestException) {
-                throw RuntimeException("Failed to upload video: ${e.message}", e)
-            } catch (e: Exception) {
-                throw RuntimeException("Unexpected error uploading video: ${e.message}", e)
-            }
-        }
+        val record = VideoRecord(
+            id = id,
+            videoType = videoType,
+            fileName = fileName,
+            createdAt = System.currentTimeMillis()
+        )
+        modify { it + record }
+        return record
     }
 
-    /**
-     * Saves video metadata to the videos table
-     */
-    private suspend fun saveVideoMetadata(
-        userId: String,
-        videoUrl: String,
-        videoType: String,
-        fileName: String,
-        uploadedAt: Long
-    ) {
-        withContext(Dispatchers.IO) {
-            try {
-                val videoData = mapOf(
-                    "user_id" to userId,
-                    "video_url" to videoUrl,
-                    "video_type" to videoType,
-                    "file_name" to fileName,
-                    "uploaded_at" to uploadedAt,
-                    "created_at" to System.currentTimeMillis()
-                )
+    /** Returns stored video metadata, most recent first. */
+    suspend fun getUserVideos(limit: Int = 100): List<VideoRecord> =
+        loadAll().sortedByDescending { it.createdAt }.take(limit)
 
-                supabaseClient
-                    .from("videos")
-                    .insert(videoData)
-                    .execute()
-            } catch (e: PostgrestException) {
-                throw RuntimeException("Failed to save video metadata: ${e.message}", e)
-            } catch (e: Exception) {
-                throw RuntimeException("Unexpected error saving video metadata: ${e.message}", e)
-            }
-        }
+    /** Returns a single video record by id, if present. */
+    suspend fun getVideoById(videoId: String): VideoRecord? =
+        loadAll().firstOrNull { it.id == videoId }
+
+    /** Downloads and decrypts a previously backed-up video into a cache file. */
+    suspend fun downloadAndDecrypt(videoId: String): File? {
+        val record = getVideoById(videoId) ?: return null
+        val encryptedBytes = sync.pullMedia(videoId) ?: return null
+        val encFile = File(storeFileDirFor(videoId), "$videoId.enc")
+        encFile.writeBytes(encryptedBytes)
+        return videoEncryptionService.decryptVideo(encFile)
     }
 
-    /**
-     * Retrieves video metadata for a user
-     */
-    suspend fun getUserVideos(
-        userId: String,
-        limit: Int = 50,
-        offset: Int = 0
-    ): List<VideoRecord> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = supabaseClient
-                    .from("videos")
-                    .select("*")
-                    .eq("user_id", userId)
-                    .order("uploaded_at", ascending = false)
-                    .limit(limit.toString())
-                    .offset(offset.toString())
-                    .execute()
-
-                val data = response.data as List<<Map<String, Any>>
-                return data.map { record ->
-                    VideoRecord(
-                        id = record["id"] as String,
-                        userId = record["user_id"] as String,
-                        videoUrl = record["video_url"] as String,
-                        videoType = record["video_type"] as String,
-                        fileName = record["file_name"] as String,
-                        uploadedAt = record["uploaded_at"] as Long,
-                        createdAt = record["created_at"] as Long
-                    )
-                }
-            } catch (e: PostgrestException) {
-                throw RuntimeException("Failed to get user videos: ${e.message}", e)
-            } catch (e: Exception) {
-                throw RuntimeException("Unexpected error getting user videos: ${e.message}", e)
-            }
-        }
+    /** Removes a video record and its encrypted local/media reference. */
+    suspend fun remove(videoId: String) {
+        modify { list -> list.filterNot { it.id == videoId } }
     }
 
-    /**
-     * Gets a video record by ID
-     */
-    suspend fun getVideoById(videoId: String): VideoRecord? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = supabaseClient
-                    .from("videos")
-                    .select("*")
-                    .eq("id", videoId)
-                    .single()
-                    .execute()
+    private suspend fun loadAll(): List<VideoRecord> {
+        val raw = store.loadPlain(key) ?: return emptyList()
+        return runCatching { json.decodeFromString(listSerializer, raw) }
+            .getOrElse { emptyList() }
+    }
 
-                val data = response.data as Map<String, Any>
-                return VideoRecord(
-                    id = data["id"] as String,
-                    userId = data["user_id"] as String,
-                    videoUrl = data["video_url"] as String,
-                    videoType = data["video_type"] as String,
-                    fileName = data["file_name"] as String,
-                    uploadedAt = data["uploaded_at"] as Long,
-                    createdAt = data["created_at"] as Long
-                )
-            } catch (e: PostgrestException) {
-                if (e.code == "PGRST116") {
-                    // No rows returned
-                    return null
-                }
-                throw RuntimeException("Failed to get video: ${e.message}", e)
-            } catch (e: Exception) {
-                throw RuntimeException("Unexpected error getting video: ${e.message}", e)
-            }
-        }
+    private suspend fun modify(transform: (List<VideoRecord>) -> List<VideoRecord>) {
+        val updated = transform(loadAll())
+        store.savePlain(key, json.encodeToString(listSerializer, updated))
+    }
+
+    private fun storeFileDirFor(videoId: String): File {
+        val dir = File(store.fileFor(key).parentFile, "video_$videoId")
+        dir.mkdirs()
+        return dir
     }
 }
-
-/**
- * Data class representing a video record
- */
-data class VideoRecord(
-    val id: String,
-    val userId: String,
-    val videoUrl: String,
-    val videoType: String,
-    val fileName: String,
-    val uploadedAt: Long,
-    val createdAt: Long
-)

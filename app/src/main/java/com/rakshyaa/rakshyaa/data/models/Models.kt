@@ -75,3 +75,21 @@ data class LegalResource(
     val category: String = "general",
     val phone: String? = null
 )
+
+@Serializable
+data class LocationRecord(
+    val id: String = "",
+    val latitude: Double,
+    val longitude: Double,
+    val accuracy: Float = 0f,
+    val timestamp: Long = System.currentTimeMillis(),
+    val isSos: Boolean = false
+)
+
+@Serializable
+data class VideoRecord(
+    val id: String = "",
+    val videoType: String = "general",
+    val fileName: String = "",
+    val createdAt: Long = System.currentTimeMillis()
+)

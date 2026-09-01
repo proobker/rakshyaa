@@ -85,4 +85,14 @@
     <string name="tracking_channel_name">Location tracking</string>
     <string name="tracking_notification_title">Location tracking active</string>
     <string name="tracking_notification_text">Your location is being shared with your trusted contacts.</string>
+
+    <!-- Check-in service -->
+    <string name="check_in_channel_name">Safety check-ins</string>
+    <string name="check_in_channel_description">Alerts for scheduled safety check-ins</string>
+    <string name="check_in_service_active">Check-In Service Active</string>
+
+    <!-- Ride monitoring -->
+    <string name="ride_monitoring_channel_name">Ride monitoring</string>
+    <string name="ride_monitoring_channel_description">Alerts while your ride is being monitored</string>
+    <string name="ride_monitoring_active">Ride monitoring active</string>
 </resources>

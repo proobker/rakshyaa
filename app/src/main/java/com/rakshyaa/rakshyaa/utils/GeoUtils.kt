@@ -8,9 +8,7 @@ import android.location.Location
  */
 object GeoUtils {
 
-    companion object {
-        private const val EARTH_RADIUS_M = 6371000.0 // Earth's radius in meters
-    }
+    private const val EARTH_RADIUS_M = 6371000.0 // Earth's radius in meters
 
     /**
      * Calculates the distance between two points using the Haversine formula
@@ -127,7 +125,10 @@ object GeoUtils {
         val closestY = lineStart.longitude + clampedT * dy
 
         // Return distance to the closest point
-        return distanceBetween(point, Location("", closestX, closestY, 0f))
+        val closestPoint = Location("")
+        closestPoint.latitude = closestX
+        closestPoint.longitude = closestY
+        return distanceBetween(point, closestPoint)
     }
 
     /**

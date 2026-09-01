@@ -7,6 +7,7 @@ import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.rakshyaa.rakshyaa.BuildConfig
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -18,7 +19,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class GoogleAuthClient @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     private val credentialManager = CredentialManager.create(context)
 
