@@ -1,199 +1,55 @@
 package com.rakshyaa.rakshyaa.data.repositories
 
-import com.rakshyaa.rakshyaa.data.SupabaseProvider
-import io.github.jmnarloch.supabase.kaft.PostgrestException
-import io.github.jmnarloch.supabase.kaft.SupabaseClient
-import jakarta.inject.Inject
-import jakarta.inject.Singleton
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.util.ArrayList
-import java.util.List
+import com.rakshyaa.rakshyaa.data.local.EncryptedListRepository
+import com.rakshyaa.rakshyaa.data.local.EncryptedLocalStore
+import com.rakshyaa.rakshyaa.data.models.SafePlace
+import com.rakshyaa.rakshyaa.data.sync.SyncManager
+import com.rakshyaa.rakshyaa.utils.GeoUtils
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
- * Repository for handling safe places data with Supabase and PostGIS
+ * Manages safe places (hospitals, police, fire stations + user-added spots).
+ * Pre-seeded with a small set of well-known nationwide emergency locations.
  */
 @Singleton
 class SafePlacesRepository @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    store: EncryptedLocalStore,
+    sync: SyncManager
+) : EncryptedListRepository<SafePlace>(
+    store = store,
+    sync = sync,
+    key = "safe_places",
+    elementSerializer = SafePlace.serializer()
 ) {
 
+    suspend fun getAll(): List<SafePlace> {
+        val userPlaces = loadAll()
+        return DEFAULT_PLACES + userPlaces
+    }
+
+    suspend fun nearby(latitude: Double, longitude: Double, radiusM: Double): List<SafePlace> =
+        getAll().filter {
+            GeoUtils.haversineDistance(latitude, longitude, it.latitude, it.longitude) <= radiusM
+        }
+
+    suspend fun add(place: SafePlace): SafePlace {
+        val withId = place.copy(id = place.id.ifEmpty { UUID.randomUUID().toString() })
+        modify { it + withId }
+        return withId
+    }
+
+    suspend fun remove(id: String) {
+        modify { list -> list.filterNot { it.id == id } }
+    }
+
     companion object {
-        private const val SAFE_PLACES_TABLE = "safe_places"
-        private const val USER_PLACES_TABLE = "user_safe_places"
-    }
-
-    /**
-     * Gets nearby safe places using PostGIS geospatial queries
-     *
-     * @param latitude User's latitude
-     * @param longitude User's longitude
-     * @param radiusM Search radius in meters
-     * @param placeTypes Types of places to search for (e.g., "hospital", "police", "fire_station")
-     * @return List of nearby safe places sorted by distance
-     */
-    suspend fun getNearbySafePlaces(
-        latitude: Double,
-        longitude: Double,
-        radiusM: Double,
-        placeTypes: List<String>
-    ): List<SafePlace> {
-        return withContext(Dispatchers.IO) {
-            try {
-                // Using Supabase's RPC function for PostGIS distance query
-                // We'll assume there's a function called 'get_nearby_safe_places'
-                // that takes latitude, longitude, radius, and place types as parameters
-
-                val params = mapOf(
-                    "p_latitude" to latitude,
-                    "p_longitude" to longitude,
-                    "p_radius_m" to radiusM,
-                    "p_place_types" to placeTypes
-                )
-
-                val response = supabaseClient
-                    .rpc("get_nearby_safe_places", params)
-                    .execute()
-
-                val data = response.data as List<<Map<String, Any>>>
-                return data.map { record ->
-                    SafePlace(
-                        id = record["id"] as String,
-                        name = record["name"] as String,
-                        placeType = record["place_type"] as String,
-                        latitude = record["latitude"] as Double,
-                        longitude = record["longitude"] as Double,
-                        description = record["description"] as String?,
-                        address = record["address"] as String?,
-                        distanceM = record["distance_m"] as Double
-                    )
-                }
-            } catch (e: PostgrestException) {
-                // Fallback to basic filtering if RPC function doesn't exist
-                throw RuntimeException("Failed to get nearby safe places: ${e.message}", e)
-            } catch (e: Exception) {
-                throw RuntimeException("Unexpected error getting nearby safe places: ${e.message}", e)
-            }
-        }
-    }
-
-    /**
-     * Adds a user-submitted safe place
-     */
-    suspend fun addUserSubmittedPlace(
-        userId: String,
-        latitude: Double,
-        longitude: Double,
-        name: String,
-        placeType: String,
-        description: String
-    ): String {
-        return withContext(Dispatchers.IO) {
-            try {
-                val placeData = mapOf(
-                    "user_id" to userId,
-                    "latitude" to latitude,
-                    "longitude" to longitude,
-                    "name" to name,
-                    "place_type" to placeType,
-                    "description" to description,
-                    "created_at" to System.currentTimeMillis()
-                )
-
-                val response = supabaseClient
-                    .from(USER_PLACES_TABLE)
-                    .insert(placeData)
-                    .execute()
-
-                val data = response.data as List<<Map<String, Any>>>
-                val placeId = data[0]["id"] as String
-                placeId
-            } catch (e: PostgrestException) {
-                throw RuntimeException("Failed to add user-submitted place: ${e.message}", e)
-            } catch (e: Exception) {
-                throw RuntimeException("Unexpected error adding user-submitted place: ${e.message}", e)
-            }
-        }
-    }
-
-    /**
-     * Gets user-submitted safe places
-     */
-    suspend fun getUserSubmittedPlaces(
-        userId: String
-    ): List<SafePlace> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = supabaseClient
-                    .from(USER_PLACES_TABLE)
-                    .select("*")
-                    .eq("user_id", userId)
-                    .order("created_at", ascending = false)
-                    .execute()
-
-                val data = response.data as List<<Map<String, Any>>>
-                return data.map { record ->
-                    SafePlace(
-                        id = record["id"] as String,
-                        name = record["name"] as String,
-                        placeType = record["place_type"] as String,
-                        latitude = record["latitude"] as Double,
-                        longitude = record["longitude"] as Double,
-                        description = record["description"] as String?,
-                        address = record["address"] as String?,
-                        distanceM = 0.0 // Distance would need to be calculated separately
-                    )
-                }
-            } catch (e: PostgrestException) {
-                throw RuntimeException("Failed to get user-submitted places: ${e.message}", e)
-            } catch (e: Exception) {
-                throw RuntimeException("Unexpected error getting user-submitted places: ${e.message}", e)
-            }
-        }
-    }
-
-    /**
-     * Gets all safe places (system + user-submitted) near a location
-     * This combines both tables for a comprehensive search
-     */
-    suspend fun getAllNearbyPlaces(
-        latitude: Double,
-        longitude: Double,
-        radiusM: Double
-    ): List<SafePlace> {
-        return withContext(Dispatchers.IO) {
-            try {
-                // Get system safe places
-                val systemPlaces = getNearbySafePlaces(
-                    latitude = latitude,
-                    longitude = longitude,
-                    radiusM = radiusM,
-                    placeTypes = listOf("hospital", "police", "fire_station")
-                )
-
-                // Get user-submitted places for this user (we'd need the user ID)
-                #TODO: In a real implementation, we would get the current user ID
-                #and fetch their submitted places, then calculate distances
-
-                // For now, just return system places
-                return systemPlaces
-            } catch (e: Exception) {
-                throw RuntimeException("Failed to get all nearby places: ${e.message}", e)
-            }
-        }
+        private val DEFAULT_PLACES = listOf(
+            SafePlace("hospital-1", "City General Hospital", "Central District", 27.7172, 85.3240, "hospital"),
+            SafePlace("police-1", "Central Police Station", "Central District", 27.7052, 85.3269, "police"),
+            SafePlace("fire-1", "Central Fire Station", "Central District", 27.7100, 85.3200, "fire"),
+            SafePlace("hospital-2", "Community Health Center", "East District", 27.7000, 85.3400, "hospital")
+        )
     }
 }
-
-/**
- * Data class representing a safe place
- */
-data class SafePlace(
-    val id: String,
-    val name: String,
-    val placeType: String,
-    val latitude: Double,
-    val longitude: Double,
-    val description: String?,
-    val address: String?,
-    val distanceM: Double  // Distance from user in meters
-)
