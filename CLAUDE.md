@@ -69,7 +69,7 @@ Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
 - `android.nonTransitiveRClass=true` → resource references must be fully-qualified
   (`com.rakshyaa.rakshyaa.R.string.x`) or explicitly imported. Do not write `R.xxx`.
 - Build config fields: `BACKEND_BASE_URL`, `GOOGLE_WEB_CLIENT_ID` come from
-  `app/build.gradle` buildConfigFields (and a `local.properties`-style properties file).
+  `rakshyaa/backend.properties` (root project file, read by `app/build.gradle`).
 
 ### Commands (run inside `rakshyaa/`)
 | Action | Command |
@@ -89,6 +89,14 @@ Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
 - `services/` — foreground services (SOS, location, ride monitoring, check-in, fake call).
 - `viewmodels/`, `ui/` — Compose viewmodels, screens, navigation, theme.
 
+### Service architecture (decided)
+- **Manifest-registered services** (4): `@AndroidEntryPoint` + field injection (`@Inject lateinit var`)
+  — SOSActivationService, LocationTrackingService, RideMonitoringService, CheckInService.
+- **Helper services** (5): plain `@Singleton` with constructor injection via `javax.inject.*`
+  — VideoEncryptionService, EmergencyContactsService, FakeCallService, LegalHelpService, SafePlacesService.
+- Do NOT add new manifest services without the `@AndroidEntryPoint` pattern.
+- Do NOT use `hiltService` or `SupabaseProvider` — both are stale.
+
 ### Google OAuth notes
 - The app uses Credential Manager + `GetGoogleIdOption` with a **server client id**
   (web client id) to obtain a Google ID token, which is sent to the backend
@@ -97,18 +105,10 @@ Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
   **and its SHA-1 fingerprint** must be registered in Google Cloud Console against the
   OAuth client. The `GOOGLE_WEB_CLIENT_ID` and `BACKEND_BASE_URL` build-config fields
   must point at valid values.
+- **SHA-1 for debug builds**: `0F:2E:8A:D0:82:3D:7D:A5:C8:BF:15:0E:5A:2B:BA:FB:9F:E5:AE:01`.
+- Android OAuth client (type "Android") exists in Cloud Console only for package+SHA-1 mapping.
+- Backend `.env` must contain the **same** `GOOGLE_WEB_CLIENT_ID` (Web client ID).
 
-## Security model
-- All sensitive data (emergency contacts, incident logs, videos) is encrypted on the
-  device with AES-GCM, keys held in Android Keystore.
-- Backend backup endpoints store only opaque encrypted blobs; the server does not
-  have the keys and treats payloads as bytes.
-- Backend verifies the Google ID token itself; clients never trust a token without
-  backend confirmation.
-
-## General rules for agents
-- Do not introduce Supabase dependencies.
-- Do not reintroduce `better-sqlite3`; use `node:sqlite`.
-- Follow existing code conventions (mimic nearby files).
-- After editing Android code, run `./gradlew compileDebugKotlin` or `assembleDebug`.
-- After editing backend code, run `npm run typecheck`.
+### Network security
+- Dev builds allow cleartext `http://10.0.2.2` and `http://localhost` via
+  `rakshyaa/app/src/main/res/xml/network_security_config.xml` (referenced in manifest).

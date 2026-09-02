@@ -12,5 +12,5 @@ public final class BuildConfig {
   // Field from default config.
   public static final String BACKEND_BASE_URL = "http://10.0.2.2:8080";
   // Field from default config.
-  public static final String GOOGLE_WEB_CLIENT_ID = "765590596814-u20t479arqlo7q5821oelq3gpoam9771.apps.googleusercontent.com";
+  public static final String GOOGLE_WEB_CLIENT_ID = "765590596814-68hll5uflj7b4h9u8r9vlgrgiqvg4amu.apps.googleusercontent.com";
 }
