@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,12 +60,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.material3.ExperimentalMaterial3Api
 import com.rakshyaa.rakshyaa.R
 import com.rakshyaa.rakshyaa.data.models.EmergencyContact
 import com.rakshyaa.rakshyaa.viewmodels.EmergencyContactsViewModel
@@ -196,8 +196,8 @@ fun EmergencyContactsScreen(
                     items(uiState.contacts) { contact ->
                         ContactCard(
                             contact = contact,
-                            onCall = { launchCall(contact.phoneNumber) },
-                            onMessage = { launchSms(contact.phoneNumber) },
+                            onCall = { launchCall(context, contact.phoneNumber) },
+                            onMessage = { launchSms(context, contact.phoneNumber) },
                             onEdit = { openEditDialog(contact) },
                             onDelete = { confirmDelete(contact) }
                         )
@@ -483,8 +483,7 @@ fun ContactDialog(
                     label = { Text(stringResource(R.string.contact_phone)) },
                     placeholder = { Text("+1 XXX XXXX") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                    singleLine = true
                 )
                 // Relationship Dropdown
                 Column(
@@ -589,18 +588,14 @@ fun ContactDialog(
     )
 }
 
-@Composable
-private fun launchCall(phoneNumber: String) {
-    val context = LocalContext.current
+private fun launchCall(context: android.content.Context, phoneNumber: String) {
     val intent = Intent(Intent.ACTION_DIAL).apply {
         data = Uri.parse("tel:$phoneNumber")
     }
     context.startActivity(intent)
 }
 
-@Composable
-private fun launchSms(phoneNumber: String) {
-    val context = LocalContext.current
+private fun launchSms(context: android.content.Context, phoneNumber: String) {
     val intent = Intent(Intent.ACTION_SENDTO).apply {
         data = Uri.parse("smsto:$phoneNumber")
     }
