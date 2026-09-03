@@ -24,6 +24,8 @@ import com.rakshyaa.rakshyaa.ui.screens.SafePlacesScreen
 import com.rakshyaa.rakshyaa.ui.screens.SOSScreen
 import com.rakshyaa.rakshyaa.ui.screens.VideoCaptureScreen
 import com.rakshyaa.rakshyaa.viewmodels.AuthViewModel
+import com.rakshyaa.rakshyaa.viewmodels.EmergencyContactsViewModel
+import com.rakshyaa.rakshyaa.viewmodels.LocationTrackingViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 
 sealed interface Screen {
@@ -82,7 +84,11 @@ object TrackingScreen : BaseScreen(
 ) {
     @Composable
     override fun render(navController: NavHostController, authViewModel: AuthViewModel) {
-        LocationTrackingScreen(onNavigate = { route -> navController.navigate(route) })
+        val viewModel: LocationTrackingViewModel = hiltViewModel()
+        LocationTrackingScreen(
+            viewModel = viewModel,
+            onNavigate = { route -> navController.navigate(route) }
+        )
     }
 }
 
@@ -94,7 +100,11 @@ object ContactsScreen : BaseScreen(
 ) {
     @Composable
     override fun render(navController: NavHostController, authViewModel: AuthViewModel) {
-        EmergencyContactsScreen(onNavigate = { route -> navController.navigate(route) })
+        val viewModel: EmergencyContactsViewModel = hiltViewModel()
+        EmergencyContactsScreen(
+            viewModel = viewModel,
+            onNavigate = { route -> navController.navigate(route) }
+        )
     }
 }
 

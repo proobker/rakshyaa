@@ -95,4 +95,44 @@
     <string name="ride_monitoring_channel_name">Ride monitoring</string>
     <string name="ride_monitoring_channel_description">Alerts while your ride is being monitored</string>
     <string name="ride_monitoring_active">Ride monitoring active</string>
+
+    <!-- Location Tracking (Phase 2) -->
+    <string name="tracking_title">Location Tracking</string>
+    <string name="tracking_start">Start Tracking</string>
+    <string name="tracking_stop">Stop Tracking</string>
+    <string name="tracking_active">Tracking Active</string>
+    <string name="tracking_inactive">Tracking Inactive</string>
+    <string name="tracking_permission_needed">Location permission required</string>
+    <string name="tracking_permission_message">Grant location access to share your location with trusted contacts.</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="last_location">Last Known Location</string>
+    <string name="location_history">Recent Locations</string>
+    <string name="accuracy">Accuracy: %1$.0f meters</string>
+    <string name="no_location_yet">No location recorded yet</string>
+    <string name="sync_now">Sync Now</string>
+    <string name="syncing">Syncing…</string>
+
+    <!-- Emergency Contacts (Phase 2) -->
+    <string name="contacts_title">Emergency Contacts</string>
+    <string name="add_contact">Add Contact</string>
+    <string name="edit_contact">Edit Contact</string>
+    <string name="delete_contact">Delete Contact</string>
+    <string name="contact_name">Name</string>
+    <string name="contact_phone">Phone Number</string>
+    <string name="contact_relationship">Relationship</string>
+    <string name="relationship_spouse">Spouse</string>
+    <string name="relationship_parent">Parent</string>
+    <string name="relationship_sibling">Sibling</string>
+    <string name="relationship_friend">Friend</string>
+    <string name="relationship_other">Other</string>
+    <string name="set_as_primary">Set as primary contact</string>
+    <string name="pick_from_contacts">Pick from Contacts</string>
+    <string name="call">Call</string>
+    <string name="message">Message</string>
+    <string name="delete_confirmation_title">Delete Contact?</string>
+    <string name="delete_confirmation_message">Are you sure you want to delete this contact?</string>
+    <string name="no_contacts">No emergency contacts yet</string>
+    <string name="primary_contact">Primary</string>
+    <string name="save">Save</string>
 </resources>

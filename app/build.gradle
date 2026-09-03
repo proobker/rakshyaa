@@ -63,6 +63,11 @@ android {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+
+    // Workaround for Kotlin 2.0 + kapt + Hilt issue
+    kapt {
+        correctErrorTypes = true
+    }
 }
 
 dependencies {
@@ -113,6 +118,10 @@ dependencies {
     implementation "androidx.camera:camera-camera2:${camerax_version}"
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     implementation "androidx.camera:camera-view:${camerax_version}"
+
+    // osmdroid for OpenStreetMap (Phase 2: Location Tracking)
+    implementation "org.osmdroid:osmdroid-android:6.1.15"
+    implementation "org.osmdroid:osmdroid-wms:6.1.15"
 
     // Testing
     testImplementation "junit:junit:4.13.2"
