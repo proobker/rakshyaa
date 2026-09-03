@@ -1,9 +1,10 @@
 package com.rakshyaa.rakshyaa.ui.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateFloatAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -55,7 +56,7 @@ fun BottomNavBar(
                 selected = isSelected,
                 onClick = { onNavigate(screen.route) },
                 icon = {
-                    androidx.compose.foundation.layout.Box(
+                    Box(
                         modifier = Modifier.graphicsLayer {
                             scaleX = iconScale
                             scaleY = iconScale

@@ -1,7 +1,11 @@
 package com.rakshyaa.rakshyaa.ui.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateFloatAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,25 +56,25 @@ fun SOSButton(
     
     val buttonColor by animateColorAsState(
         targetValue = if (uiState.isSosActive) errorColor else primaryColor,
-        animationSpec = androidx.compose.animation.tween(durationMillis = 300)
+        animationSpec = tween(durationMillis = 300)
     )
     
     val pulseScale by animateFloatAsState(
         targetValue = if (uiState.isSosActive) 1.05f else 1.0f,
-        animationSpec = if (uiState.isSosActive) 
-            androidx.compose.animation.infiniteRepeatable(
-                animation = androidx.compose.animation.tween(
+        animationSpec = if (uiState.isSosActive)
+            infiniteRepeatable(
+                animation = tween(
                     durationMillis = 1000,
-                    delayMillis = 0,
-                    easing = androidx.compose.animation.Easing.Default
+                    delayMillis = 0
                 ),
-                repeatMode = androidx.compose.animation.RepeatMode.Reverse
+                repeatMode = RepeatMode.Reverse
             )
-        else androidx.compose.animation.tween(durationMillis = 300)
+        else tween(durationMillis = 300)
     )
     
     val contentAlpha by animateFloatAsState(
-        targetValue = if (uiState.isSosActivating) 0.5f else 1.0f
+        targetValue = if (uiState.isSosActivating) 0.5f else 1.0f,
+        animationSpec = tween(durationMillis = 300)
     )
 
     val buttonDiameter = 140.dp
