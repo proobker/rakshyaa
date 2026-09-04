@@ -8,12 +8,14 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.location.Location
 import android.location.LocationManager
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.rakshyaa.rakshyaa.R
@@ -69,7 +71,36 @@ class SOSActivationService : Service() {
         if (isSosActive) return
         isSosActive = true
         createNotificationChannel()
-        startForeground(SOS_NOTIFICATION_ID, buildSosNotification())
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    SOS_NOTIFICATION_ID,
+                    buildSosNotification(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE
+                )
+            } else {
+                startForeground(SOS_NOTIFICATION_ID, buildSosNotification())
+            }
+        } catch (e: Exception) {
+            Log.e("SOSActivationService", "Failed to start foreground, retrying without full-screen intent", e)
+            try {
+                val fallbackNotification = buildSosNotification(useFullScreenIntent = false)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    startForeground(
+                        SOS_NOTIFICATION_ID,
+                        fallbackNotification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                    )
+                } else {
+                    startForeground(SOS_NOTIFICATION_ID, fallbackNotification)
+                }
+            } catch (e2: Exception) {
+                Log.e("SOSActivationService", "Failed to start foreground service", e2)
+                stopSelf()
+                return
+            }
+        }
 
         val lastKnown = lastKnownLocation()
         scope.launch {
@@ -148,7 +179,7 @@ class SOSActivationService : Service() {
         }
     }
 
-    private fun buildSosNotification(): Notification {
+    private fun buildSosNotification(useFullScreenIntent: Boolean = true): Notification {
         val intent = Intent(this, com.rakshyaa.rakshyaa.ui.MainActivity::class.java)
             .apply { flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP }
         val pendingIntent = PendingIntent.getActivity(
@@ -160,7 +191,7 @@ class SOSActivationService : Service() {
         } else {
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         }
-        return NotificationCompat.Builder(this, SOS_NOTIFICATION_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, SOS_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(getString(R.string.sos_active_title))
             .setContentText(getString(R.string.sos_active_description))
             .setSmallIcon(R.drawable.ic_error_outline_24)
@@ -168,9 +199,11 @@ class SOSActivationService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setFullScreenIntent(pendingIntent, true)
             .setSound(alarmUri)
-            .build()
+        if (useFullScreenIntent) {
+            builder.setFullScreenIntent(pendingIntent, true)
+        }
+        return builder.build()
     }
 
     private fun createNotificationChannel() {
