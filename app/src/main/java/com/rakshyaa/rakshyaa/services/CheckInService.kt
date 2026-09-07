@@ -13,6 +13,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.rakshyaa.rakshyaa.R
 import com.rakshyaa.rakshyaa.data.local.SecurePreferences
+import com.rakshyaa.rakshyaa.data.models.CheckIn
 import com.rakshyaa.rakshyaa.data.repositories.CheckInRepository
 import com.rakshyaa.rakshyaa.data.repositories.EmergencyContactsRepository
 import com.rakshyaa.rakshyaa.utils.GeoUtils
@@ -60,11 +61,14 @@ class CheckInService : Service() {
             ACTION_START_CHECK_IN_SERVICE -> startCheckInService()
             ACTION_STOP_CHECK_IN_SERVICE -> stopCheckInService()
             ACTION_SCHEDULE_CHECK_IN -> {
-                val id = intent.getStringExtra(EXTRA_CHECK_IN_ID)
+                val id = intent.getStringExtra(EXTRA_CHECK_IN_ID) ?: return START_STICKY
                 val grace = intent.getIntExtra(EXTRA_GRACE_PERIOD_MIN, 5)
-                scheduleCheckIn(id, grace)
+                startCheckInTimer(id, grace)
             }
-            ACTION_CANCEL_CHECK_IN -> cancelCheckIn()
+            ACTION_CANCEL_CHECK_IN -> {
+                currentCheckInId = null
+                isCheckedIn = false
+            }
             ACTION_CHECK_IN_NOW -> performCheckIn()
         }
         return START_STICKY
@@ -80,8 +84,7 @@ class CheckInService : Service() {
         stopSelf()
     }
 
-    private fun scheduleCheckIn(checkInId: String?, graceMin: Int) {
-        if (checkInId == null) return
+    private fun startCheckInTimer(checkInId: String, graceMin: Int) {
         currentCheckInId = checkInId
         gracePeriodMin = graceMin
         isCheckedIn = false
@@ -91,9 +94,34 @@ class CheckInService : Service() {
         }
     }
 
-    private fun cancelCheckIn() {
+    suspend fun getAll(): List<CheckIn> = checkInRepository.getAll()
+
+    suspend fun scheduleCheckIn(scheduledAt: Long, graceMin: Int) {
+        val saved = checkInRepository.schedule(scheduledAt)
+        if (saved.id != currentCheckInId) {
+            startCheckInTimer(saved.id, graceMin)
+        }
+    }
+
+    suspend fun cancelCheckIn(checkInId: String) {
+        if (currentCheckInId == checkInId) {
+            currentCheckInId = null
+            isCheckedIn = false
+        }
+    }
+
+    suspend fun checkInNow(checkInId: String) {
+        isCheckedIn = true
+        val location = lastKnownLocation()
+        scope.launch {
+            checkInRepository.complete(
+                id = checkInId,
+                latitude = location?.latitude,
+                longitude = location?.longitude
+            )
+        }
+        sendNotification("Check-In Successful", "Your safety has been confirmed.")
         currentCheckInId = null
-        isCheckedIn = false
     }
 
     private fun performCheckIn() {
@@ -108,7 +136,7 @@ class CheckInService : Service() {
             )
         }
         sendNotification("Check-In Successful", "Your safety has been confirmed.")
-        cancelCheckIn()
+        currentCheckInId = null
     }
 
     private fun handleMissedCheckIn(checkInId: String) {
