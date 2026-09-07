@@ -24,8 +24,15 @@ import com.rakshyaa.rakshyaa.ui.screens.SafePlacesScreen
 import com.rakshyaa.rakshyaa.ui.screens.SOSScreen
 import com.rakshyaa.rakshyaa.ui.screens.VideoCaptureScreen
 import com.rakshyaa.rakshyaa.viewmodels.AuthViewModel
+import com.rakshyaa.rakshyaa.viewmodels.CheckInViewModel
 import com.rakshyaa.rakshyaa.viewmodels.EmergencyContactsViewModel
+import com.rakshyaa.rakshyaa.viewmodels.FakeCallViewModel
+import com.rakshyaa.rakshyaa.viewmodels.LegalHelpViewModel
 import com.rakshyaa.rakshyaa.viewmodels.LocationTrackingViewModel
+import com.rakshyaa.rakshyaa.viewmodels.ProfileViewModel
+import com.rakshyaa.rakshyaa.viewmodels.RideMonitoringViewModel
+import com.rakshyaa.rakshyaa.viewmodels.SafePlacesViewModel
+import com.rakshyaa.rakshyaa.viewmodels.VideoCaptureViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 
 sealed interface Screen {
@@ -116,9 +123,7 @@ object MoreScreen : BaseScreen(
 ) {
     @Composable
     override fun render(navController: NavHostController, authViewModel: AuthViewModel) {
-        // Placeholder for More screen with sub-navigation
-        // Sub-routes: ride, checkin, video, safeplaces, legal, fakecall, profile
-        androidx.compose.material3.Text(text = "More Screen - Coming Soon")
+        androidx.compose.material3.Text(text = "More Screen")
     }
 }
 
@@ -151,27 +156,55 @@ fun RakshyaaNavHost(navController: NavHostController = rememberNavController()) 
             MoreScreen.render(navController, authViewModel)
         }
         
-        // Sub-routes under more (will be implemented in later phases)
+        // Feature screens with their ViewModels
         composable("ride") {
-            RideMonitoringScreen(onNavigate = { route -> navController.navigate(route) })
+            val viewModel: RideMonitoringViewModel = hiltViewModel()
+            RideMonitoringScreen(
+                viewModel = viewModel,
+                onNavigate = { route -> navController.navigate(route) }
+            )
         }
         composable("checkin") {
-            CheckInScreen(onNavigate = { route -> navController.navigate(route) })
+            val viewModel: CheckInViewModel = hiltViewModel()
+            CheckInScreen(
+                viewModel = viewModel,
+                onNavigate = { route -> navController.navigate(route) }
+            )
         }
         composable("video") {
-            VideoCaptureScreen(onNavigate = { route -> navController.navigate(route) })
+            val viewModel: VideoCaptureViewModel = hiltViewModel()
+            VideoCaptureScreen(
+                viewModel = viewModel,
+                onNavigate = { route -> navController.navigate(route) }
+            )
         }
         composable("safeplaces") {
-            SafePlacesScreen(onNavigate = { route -> navController.navigate(route) })
+            val viewModel: SafePlacesViewModel = hiltViewModel()
+            SafePlacesScreen(
+                viewModel = viewModel,
+                onNavigate = { route -> navController.navigate(route) }
+            )
         }
         composable("legal") {
-            LegalHelpScreen(onNavigate = { route -> navController.navigate(route) })
+            val viewModel: LegalHelpViewModel = hiltViewModel()
+            LegalHelpScreen(
+                viewModel = viewModel,
+                onNavigate = { route -> navController.navigate(route) }
+            )
         }
         composable("fakecall") {
-            FakeCallScreen(onNavigate = { route -> navController.navigate(route) })
+            val viewModel: FakeCallViewModel = hiltViewModel()
+            FakeCallScreen(
+                viewModel = viewModel,
+                onNavigate = { route -> navController.navigate(route) }
+            )
         }
         composable("profile") {
-            ProfileScreen(onSignOut = { authViewModel.signOut() })
+            val viewModel: ProfileViewModel = hiltViewModel()
+            ProfileScreen(
+                viewModel = viewModel,
+                onSignOut = { authViewModel.signOut() }
+            )
         }
     }
 }

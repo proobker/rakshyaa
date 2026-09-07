@@ -15,6 +15,7 @@ import android.os.IBinder
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.rakshyaa.rakshyaa.R
+import com.rakshyaa.rakshyaa.data.models.RideSession
 import com.rakshyaa.rakshyaa.data.repositories.RideRepository
 import com.rakshyaa.rakshyaa.utils.GeoUtils
 import dagger.hilt.android.AndroidEntryPoint
@@ -127,6 +128,55 @@ class RideMonitoringService : Service() {
     fun isOffRoute(location: Location, route: List<Location>): Boolean {
         if (route.isEmpty()) return false
         return GeoUtils.distanceToRoute(location, route) > deviationThresholdM
+    }
+
+    suspend fun startRide(threshold: Double): RideSession {
+        isMonitoring = true
+        deviationThresholdM = threshold
+        val session = rideRepository.start()
+        sessionId = session.id
+        
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            locationManager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                10_000L,
+                5.0f,
+                locationListener
+            )
+        }
+        
+        startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.ride_monitoring_active)))
+        return session
+    }
+
+    suspend fun stopRide() {
+        if (!isMonitoring) return
+        isMonitoring = false
+        locationManager.removeUpdates(locationListener)
+        val id = sessionId
+        sessionId = null
+        if (id != null) {
+            scope.launch { rideRepository.end(id) }
+        }
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    suspend fun getActiveRide(): RideSession? = rideRepository.getActive()
+
+    suspend fun getRideHistory(): List<RideSession> = rideRepository.getAll()
+
+    fun updateDeviationThreshold(threshold: Double) {
+        deviationThresholdM = threshold
+        val intent = Intent(this, RideMonitoringService::class.java).apply {
+            action = ACTION_UPDATE_ROUTE
+            putExtra(EXTRA_DEVIATION_THRESHOLD_M, threshold)
+        }
+        startService(intent)
     }
 
     private fun buildNotification(contentText: String): Notification =

@@ -118,6 +118,7 @@
     <string name="add_contact">Add Contact</string>
     <string name="edit_contact">Edit Contact</string>
     <string name="delete_contact">Delete Contact</string>
+    <string name="delete">Delete</string>
     <string name="contact_name">Name</string>
     <string name="contact_phone">Phone Number</string>
     <string name="contact_relationship">Relationship</string>
@@ -135,4 +136,135 @@
     <string name="no_contacts">No emergency contacts yet</string>
     <string name="primary_contact">Primary</string>
     <string name="save">Save</string>
+
+    <!-- Check-In -->
+    <string name="check_in_title">Safety Check-ins</string>
+    <string name="schedule_check_in">Schedule Check-in</string>
+    <string name="check_in_now">Check In Now</string>
+    <string name="quick_check_in_title">Quick Check-in</string>
+    <string name="quick_check_in_desc">Check in immediately to confirm your safety</string>
+    <string name="no_check_ins">No scheduled check-ins</string>
+    <string name="no_check_ins_desc">Schedule a check-in to have automated safety checks with escalation to your contacts</string>
+    <string name="select_check_in_interval">Select check-in interval</string>
+    <string name="interval">Interval</string>
+    <string name="minutes">minutes</string>
+    <string name="delete_check_in">Delete Check-in</string>
+    <string name="delete_check_in_confirmation">Are you sure you want to cancel this check-in?</string>
+    <string name="cancel_check_in">Cancel</string>
+
+    <!-- Ride Monitoring -->
+    <string name="ride_monitoring_title">Ride Monitoring</string>
+    <string name="start_ride">Start Ride</string>
+    <string name="stop_ride">Stop Ride</string>
+    <string name="no_active_ride">No active ride</string>
+    <string name="no_active_ride_desc">Start a new ride to enable GPS tracking and route deviation alerts</string>
+    <string name="ride_active">Ride Active</string>
+    <string name="ride_tracking_desc">Your route is being tracked. Deviation alerts are enabled.</string>
+    <string name="ride_deviated">Route Deviation Detected</string>
+    <string name="ride_deviated_desc">You have deviated from your planned route. Emergency contacts have been notified.</string>
+    <string name="route_deviation_alert">Route Deviation Alert!</string>
+    <string name="route_deviation_desc">You are off the planned route. Check your surroundings.</string>
+    <string name="set_deviation_threshold">Set deviation threshold</string>
+    <string name="deviation_threshold">Deviation threshold: %1$sm</string>
+    <string name="ride_history">Ride History</string>
+    <string name="waypoints">waypoints</string>
+    <string name="duration">Duration</string>
+    <string name="in_progress">In Progress</string>
+    <string name="route_deviated">Route Deviated</string>
+
+    <!-- Safe Places -->
+    <string name="safe_places_title">Safe Places</string>
+    <string name="add_safe_place">Add Safe Place</string>
+    <string name="nearby_safe_places">Nearby Safe Places</string>
+    <string name="my_safe_places">My Safe Places</string>
+    <string name="no_safe_places_found">No safe places found</string>
+    <string name="add_safe_places_desc">Add your own safe places or search for nearby hospitals, police stations, and fire departments</string>
+    <string name="place_name">Place Name</string>
+    <string name="enter_place_name">Enter place name</string>
+    <string name="address_optional">Address (optional)</string>
+    <string name="enter_address">Enter address</string>
+    <string name="place_type">Place Type</string>
+    <string name="latitude">Latitude</string>
+    <string name="longitude">Longitude</string>
+    <string name="use_current_location">Use current location</string>
+    <string name="pick_on_map">Pick on Map</string>
+    <string name="navigate">Navigate</string>
+    <string name="delete_safe_place_confirmation">Are you sure you want to delete this safe place?</string>
+
+    <!-- Legal Help -->
+    <string name="legal_help_title">Legal Help</string>
+    <string name="add_note">Add Note</string>
+    <string name="search_legal_resources">Search legal resources…</string>
+    <string name="no_legal_resources">No legal resources available</string>
+    <string name="no_search_results">No results found</string>
+    <string name="note_title">Note Title</string>
+    <string name="enter_note_title">Enter note title</string>
+    <string name="note_body">Note Body</string>
+    <string name="enter_note_body">Enter note body</string>
+    <string name="helpline_phone_optional">Helpline Phone (optional)</string>
+    <string name="delete_note_confirmation">Are you sure you want to delete this note?</string>
+
+    <!-- Video Capture -->
+    <string name="video_capture_title">Encrypted Video Capture</string>
+    <string name="record_video">Record Video</string>
+    <string name="start_recording">Start Recording</string>
+    <string name="recording">Recording…</string>
+    <string name="tap_to_record">Tap to Record</string>
+    <string name="tap_to_record_desc">Press the button below to start recording an encrypted video</string>
+    <string name="video_type">Video Type</string>
+    <string name="select_video_type">Select Video Type</string>
+    <string name="no_videos_recorded">No videos recorded</string>
+    <string name="record_first_video_desc">Record your first encrypted video for evidence or documentation</string>
+    <string name="recorded_videos">Recorded Videos</string>
+    <string name="encrypting_video">Encrypting video…</string>
+    <string name="uploading_video">Uploading encrypted video…</string>
+    <string name="decrypt_download">Decrypt &amp; Download</string>
+    <string name="delete_video_confirmation">Are you sure you want to delete this video?</string>
+
+    <!-- Fake Call -->
+    <string name="fake_call_title">Fake Call</string>
+    <string name="trigger_fake_call">Trigger Fake Call</string>
+    <string name="caller_configuration">Caller Configuration</string>
+    <string name="caller_name">Caller Name</string>
+    <string name="enter_caller_name">Enter caller name</string>
+    <string name="caller_number">Caller Number</string>
+    <string name="trigger_settings">Trigger Settings</string>
+    <string name="trigger_delay">Trigger Delay: %1$ds</string>
+    <string name="trigger_desc">Fake call will trigger in %1$d seconds</string>
+    <string name="ready_to_trigger">Ready to Trigger</string>
+    <string name="trigger_now">Trigger Now</string>
+    <string name="incoming_call">Incoming Call…</string>
+    <string name="call_connected">Call Connected</string>
+    <string name="answer">Answer</string>
+    <string name="decline">Decline</string>
+    <string name="end_call">End Call</string>
+    <string name="call_in_progress">Call in Progress</string>
+    <string name="call_connected_duration">Connected for %1$s</string>
+    <string name="video_call">Video Call</string>
+    <string name="video_call_desc">Simulate a video call instead of audio</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Profile and Settings</string>
+    <string name="preferences">Preferences</string>
+    <string name="notifications">Notifications</string>
+    <string name="notifications_desc">Receive alerts and updates</string>
+    <string name="location_sharing_title">Location Sharing</string>
+    <string name="location_sharing_desc">Allow location sharing with emergency contacts</string>
+    <string name="auto_backup">Auto Backup</string>
+    <string name="auto_backup_desc">Automatically backup encrypted data to cloud</string>
+    <string name="data_management">Data Management</string>
+    <string name="sync_now_desc">Manually sync encrypted data with backend</string>
+    <string name="last_sync">Last Sync</string>
+    <string name="never_synced">Never synced</string>
+    <string name="about">About</string>
+    <string name="app_version">App Version</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="privacy_policy_desc">View our privacy policy</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="terms_of_service_desc">View terms of service</string>
+    <string name="help_support">Help and Support</string>
+    <string name="help_support_desc">Get help and contact support</string>
+    <string name="sign_out_confirmation">Are you sure you want to sign out?</string>
+    <string name="verified">Verified</string>
+    <string name="user">User</string>
 </resources>
