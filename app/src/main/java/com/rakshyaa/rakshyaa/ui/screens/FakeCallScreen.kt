@@ -1,13 +1,7 @@
 package com.rakshyaa.rakshyaa.ui.screens
 
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.MediaPlayer
-import android.net.Uri
-import android.os.Build
 import android.os.CountDownTimer
-import android.provider.Settings
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,36 +16,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallEnd
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -59,14 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rakshyaa.rakshyaa.R
-import com.rakshyaa.rakshyaa.services.FakeCallService
-import com.rakshyaa.rakshyaa.services.OngoingFakeCall
 import com.rakshyaa.rakshyaa.viewmodels.FakeCallViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun FakeCallScreen(
@@ -82,25 +63,11 @@ fun FakeCallScreen(
     var countdownTimer: CountDownTimer? = remember { null }
     var countdownSeconds by remember { mutableStateOf(uiState.triggerDelaySeconds) }
 
-    fun playRingtone() {
-        val ringtoneUri = Settings.System.DEFAULT_RINGTONE_URI
-        val mediaPlayer = MediaPlayer()
-        try {
-            val audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-            mediaPlayer.setAudioAttributes(audioAttributes)
-            mediaPlayer.setDataSource(context, ringtoneUri)
-            mediaPlayer.setLooping(true)
-            mediaPlayer.prepare()
-            mediaPlayer.start()
-        } catch (e: Exception) {
-            e.printStackTrace()
+    androidx.compose.runtime.DisposableEffect(key1 = Unit) {
+        onDispose {
+            countdownTimer?.cancel()
+            viewModel.stopRingtone(context)
         }
-    }
-
-    fun stopRingtone() {
     }
 
     fun startCountdown() {
@@ -112,7 +79,7 @@ fun FakeCallScreen(
             }
 
             override fun onFinish() {
-                playRingtone()
+                viewModel.startRingtone(context)
             }
         }.start()
     }

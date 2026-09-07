@@ -85,4 +85,12 @@ class VideoCaptureViewModel @Inject constructor(
             )
         }
     }
+
+    fun setRecording(isRecording: Boolean) {
+        _uiState.value = _uiState.value.copy(isRecording = isRecording)
+    }
+
+    fun setError(error: String?) {
+        _uiState.value = _uiState.value.copy(error = error)
+    }
 }

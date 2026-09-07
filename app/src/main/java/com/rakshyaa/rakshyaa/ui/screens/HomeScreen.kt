@@ -96,29 +96,29 @@ fun HomeScreen(
             route = "legal"
         ),
         FeatureItem(
-            title = "Ride Monitoring",
-            description = "Track rides, detect route deviation",
+            title = stringResource(R.string.home_ride_monitoring),
+            description = stringResource(R.string.home_ride_monitoring_desc),
             icon = Icons.Default.DirectionsCar,
             color = Color(0xFF3F51B5),
             route = "ride"
         ),
         FeatureItem(
-            title = "Check-ins",
-            description = "Scheduled safety check-ins",
+            title = stringResource(R.string.home_check_ins),
+            description = stringResource(R.string.home_check_ins_desc),
             icon = Icons.Default.EmojiEvents,
             color = Color(0xFFFF9800),
             route = "checkin"
         ),
         FeatureItem(
-            title = "Video Capture",
-            description = "Encrypted video recording",
+            title = stringResource(R.string.home_video_capture),
+            description = stringResource(R.string.home_video_capture_desc),
             icon = Icons.Default.Videocam,
             color = Color(0xFFE91E63),
             route = "video"
         ),
         FeatureItem(
-            title = "Fake Call",
-            description = "Simulate incoming call",
+            title = stringResource(R.string.home_fake_call),
+            description = stringResource(R.string.home_fake_call_desc),
             icon = Icons.Default.Phone,
             color = Color(0xFF795548),
             route = "fakecall"

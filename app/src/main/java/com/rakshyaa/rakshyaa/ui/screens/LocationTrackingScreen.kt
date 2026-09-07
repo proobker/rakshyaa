@@ -278,7 +278,7 @@ fun LocationTrackingScreen(
         // Sync Now Button
         if (hasPermissions) {
             Button(
-                onClick = { /* SyncManager auto-syncs on save */ },
+                onClick = { viewModel.syncNow() },
                 modifier = Modifier.fillMaxWidth(),
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,

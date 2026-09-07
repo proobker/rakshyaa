@@ -235,7 +235,7 @@ fun LegalHelpScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        resourceToDelete?.let { viewModel.addNote("", "", null) } // This would need a remove method
+                        resourceToDelete?.let { viewModel.deleteNote(it.id) }
                         showDeleteConfirm = false
                         resourceToDelete = null
                     },

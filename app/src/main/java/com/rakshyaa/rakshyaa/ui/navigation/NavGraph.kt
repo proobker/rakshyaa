@@ -123,7 +123,7 @@ object MoreScreen : BaseScreen(
 ) {
     @Composable
     override fun render(navController: NavHostController, authViewModel: AuthViewModel) {
-        androidx.compose.material3.Text(text = "More Screen")
+        MoreScreenContent(onNavigate = { route -> navController.navigate(route) })
     }
 }
 

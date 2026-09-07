@@ -42,6 +42,10 @@ class LegalHelpRepository @Inject constructor(
         return note
     }
 
+    suspend fun remove(id: String) {
+        modify { list -> list.filterNot { it.id == id } }
+    }
+
     private fun noteId(title: String, ts: Long): String =
         "note-${title.hashCode().toUInt().toString(16)}-$ts"
 

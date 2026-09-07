@@ -121,7 +121,7 @@ fun SOSScreen(
         ) {
             InfoCard(
                 title = stringResource(R.string.emergency_called),
-                subtitle = if (uiState.isSosActive) "Emergency services alerted" else "Will call 112 on activation",
+                subtitle = if (uiState.isSosActive) stringResource(R.string.emergency_called_active) else stringResource(R.string.emergency_called_inactive),
                 icon = Icons.Default.Shield,
                 isActive = uiState.isSosActive,
                 color = errorColor,
@@ -129,7 +129,7 @@ fun SOSScreen(
             )
             InfoCard(
                 title = stringResource(R.string.location_sharing),
-                subtitle = if (uiState.isSosActive) "Live location sharing active" else "Location will be shared",
+                subtitle = if (uiState.isSosActive) stringResource(R.string.location_sharing_active) else stringResource(R.string.location_sharing_inactive),
                 icon = Icons.Default.Info,
                 isActive = uiState.isSosActive,
                 color = primaryColor,
@@ -137,7 +137,7 @@ fun SOSScreen(
             )
             InfoCard(
                 title = stringResource(R.string.admin_notified),
-                subtitle = if (uiState.isSosActive) "Admin portal notified" else "Incident sent to backend",
+                subtitle = if (uiState.isSosActive) stringResource(R.string.admin_notified_active) else stringResource(R.string.admin_notified_inactive),
                 icon = Icons.Default.Info,
                 isActive = uiState.isSosActive,
                 color = colors.tertiary,

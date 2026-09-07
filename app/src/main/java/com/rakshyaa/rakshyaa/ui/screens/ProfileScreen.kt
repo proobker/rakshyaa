@@ -1,7 +1,11 @@
 package com.rakshyaa.rakshyaa.ui.screens
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +69,8 @@ fun ProfileScreen(
     val context = LocalContext.current
 
     var showSignOutDialog by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf(uiState.userName ?: "") }
+    var editPhone by remember { mutableStateOf(uiState.userPhone ?: "") }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -110,18 +116,67 @@ fun ProfileScreen(
                         )
                     }
 
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = uiState.userName ?: stringResource(R.string.user),
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        uiState.userEmail?.let { email ->
-                            Text(
-                                text = email,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                    if (uiState.isEditing) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            androidx.compose.material3.OutlinedTextField(
+                                value = editName,
+                                onValueChange = { editName = it },
+                                label = { Text(stringResource(R.string.first_name)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
                             )
+                            androidx.compose.material3.OutlinedTextField(
+                                value = editPhone,
+                                onValueChange = { editPhone = it },
+                                label = { Text(stringResource(R.string.phone_number)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                                )
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Button(
+                                    onClick = { viewModel.toggleEditMode() },
+                                    modifier = Modifier.weight(1f),
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        contentColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                ) { Text(stringResource(R.string.cancel)) }
+                                Button(
+                                    onClick = { viewModel.updateProfile(editName, editPhone) },
+                                    modifier = Modifier.weight(1f)
+                                ) { Text(stringResource(R.string.save)) }
+                            }
+                        }
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = uiState.userName ?: stringResource(R.string.user),
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            uiState.userEmail?.let { email ->
+                                Text(
+                                    text = email,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                )
+                            }
+                            uiState.userPhone?.let { phone ->
+                                Text(
+                                    text = phone,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                                )
+                            }
                         }
                     }
 
@@ -129,6 +184,23 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        if (!uiState.isEditing) {
+                            Button(
+                                onClick = {
+                                    editName = uiState.userName ?: ""
+                                    editPhone = uiState.userPhone ?: ""
+                                    viewModel.toggleEditMode()
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Text("  Edit Profile")
+                            }
+                        }
                         ChipItem(
                             icon = Icons.Default.Verified,
                             label = stringResource(R.string.verified),
@@ -240,19 +312,22 @@ fun ProfileScreen(
                         icon = Icons.Default.Settings,
                         title = stringResource(R.string.privacy_policy),
                         subtitle = stringResource(R.string.privacy_policy_desc),
-                        trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        onClick = { browse(context, "https://rakshyaa.com/privacy") }
                     ),
                     SettingItem(
                         icon = Icons.Default.Verified,
                         title = stringResource(R.string.terms_of_service),
                         subtitle = stringResource(R.string.terms_of_service_desc),
-                        trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        onClick = { browse(context, "https://rakshyaa.com/terms") }
                     ),
                     SettingItem(
                         icon = Icons.Default.Person,
                         title = stringResource(R.string.help_support),
                         subtitle = stringResource(R.string.help_support_desc),
-                        trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        onClick = { browse(context, "https://rakshyaa.com/support") }
                     )
                 )
             )
@@ -415,7 +490,10 @@ fun SettingRow(
     androidx.compose.material3.Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .then(
+                if (item.onClick != null) Modifier.clickable(onClick = item.onClick!!) else Modifier
+            ),
         shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -483,4 +561,10 @@ fun ChipItem(
             )
         }
     }
+}
+
+private fun browse(context: Context, url: String) {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
 }

@@ -1,18 +1,14 @@
 package com.rakshyaa.rakshyaa.ui.screens
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Environment
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.FocusMeteringAction
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -56,38 +52,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.LifecycleOwner
-import com.google.common.util.concurrent.ListenableFuture
 import com.rakshyaa.rakshyaa.R
 import com.rakshyaa.rakshyaa.data.models.VideoRecord
-import com.rakshyaa.rakshyaa.services.VideoEncryptionService
-import com.rakshyaa.rakshyaa.data.repositories.VideoRepository
 import com.rakshyaa.rakshyaa.viewmodels.VideoCaptureViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import java.io.File
-import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 @Composable
 fun VideoCaptureScreen(
@@ -129,6 +112,94 @@ fun VideoCaptureScreen(
         }
     }
 
+    // Camera and recording state
+    var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+    var previewView by remember { mutableStateOf<PreviewView?>(null) }
+    var mediaRecorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var currentRecordingFile by remember { mutableStateOf<File?>(null) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            mediaRecorder?.apply {
+                try { stop() } catch (_: Exception) {}
+                release()
+            }
+            mediaRecorder = null
+        }
+    }
+
+    fun buildMediaRecorder(): MediaRecorder {
+        val mr = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder()
+        } else {
+            @Suppress("DEPRECATION")
+            MediaRecorder()
+        }
+        mr.setAudioSource(MediaRecorder.AudioSource.MIC)
+        mr.setVideoSource(MediaRecorder.VideoSource.SURFACE)
+        mr.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+        val videoDir = File(context.getExternalFilesDir(Environment.DIRECTORY_MOVIES), "rakshyaa")
+        videoDir.mkdirs()
+        val fileName = "VID_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.mp4"
+        val file = File(videoDir, fileName)
+        currentRecordingFile = file
+        mr.setOutputFile(file.absolutePath)
+        mr.setVideoEncodingBitRate(5_000_000)
+        mr.setVideoFrameRate(30)
+        mr.setVideoSize(1280, 720)
+        mr.setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+        mr.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+        mr.prepare()
+        return mr
+    }
+
+    fun bindCameraWithVideoCapture() {
+        val provider = cameraProvider ?: return
+        val preview = previewView ?: return
+        val owner = lifecycleOwner
+
+        val previewUseCase = Preview.Builder().build().also {
+            it.setSurfaceProvider(preview.surfaceProvider)
+        }
+        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+        try {
+            provider.unbindAll()
+            provider.bindToLifecycle(owner, cameraSelector, previewUseCase)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun doStartRecording() {
+        try {
+            val mr = buildMediaRecorder()
+            mediaRecorder = mr
+            mr.start()
+            viewModel.setRecording(true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            viewModel.setError("Failed to start recording: ${e.message}")
+        }
+    }
+
+    fun doStopRecording() {
+        try {
+            mediaRecorder?.apply {
+                stop()
+                release()
+            }
+            mediaRecorder = null
+            viewModel.setRecording(false)
+            currentRecordingFile?.let { file ->
+                viewModel.encryptAndBackupVideo(file, selectedVideoType)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            viewModel.setRecording(false)
+            viewModel.setError("Failed to stop recording: ${e.message}")
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -142,8 +213,8 @@ fun VideoCaptureScreen(
         floatingActionButton = {
             if (!uiState.isRecording) {
                 ExtendedFloatingActionButton(
-                    onClick = { 
-                        showTypeDialog = true 
+                    onClick = {
+                        showTypeDialog = true
                     },
                     icon = { Icon(Icons.Default.Videocam, contentDescription = null) },
                     text = { Text(stringResource(R.string.record_video)) },
@@ -164,21 +235,23 @@ fun VideoCaptureScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(16f / 9f)
-                        .background(Color.Black)
+                        .background(androidx.compose.ui.graphics.Color.Black)
                         .clip(RoundedCornerShape(12.dp))
                 ) {
                     AndroidView(
-                        factory = { ctx: android.content.Context ->
+                        factory = { ctx ->
                             PreviewView(ctx).apply {
                                 implementationMode = PreviewView.ImplementationMode.PERFORMANCE
+                                previewView = this
                             }
                         },
-                        update = { previewView: PreviewView ->
-                            bindCameraPreview(previewView, lifecycleOwner)
+                        update = { pv ->
+                            previewView = pv
+                            bindCameraWithVideoCapture()
                         },
                         modifier = Modifier.fillMaxSize()
                     )
-                    
+
                     // Recording Overlay
                     Box(
                         modifier = Modifier
@@ -193,18 +266,18 @@ fun VideoCaptureScreen(
                             Box(
                                 modifier = Modifier
                                     .size(12.dp)
-                                    .background(Color.Red)
+                                    .background(androidx.compose.ui.graphics.Color.Red)
                                     .clip(CircleShape)
                             )
                             Text(
                                 text = stringResource(R.string.recording),
                                 style = MaterialTheme.typography.labelLarge,
-                                color = Color.White,
+                                color = androidx.compose.ui.graphics.Color.White,
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                             )
                         }
                     }
-                    
+
                     // Stop Button
                     Box(
                         modifier = Modifier
@@ -213,7 +286,7 @@ fun VideoCaptureScreen(
                         contentAlignment = Alignment.BottomCenter
                     ) {
                         Button(
-                            onClick = { stopRecording() },
+                            onClick = { doStopRecording() },
                             colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error,
                                 contentColor = MaterialTheme.colorScheme.onError
@@ -225,7 +298,7 @@ fun VideoCaptureScreen(
                     }
                 }
             } else {
-                // Preview placeholder or last recorded video
+                // Preview placeholder
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -437,7 +510,7 @@ fun VideoCaptureScreen(
                 ) {
                     videoTypes.forEach { type ->
                         val isSelected = selectedVideoType == type
-                        androidx.compose.foundation.layout.Row(
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
@@ -454,7 +527,7 @@ fun VideoCaptureScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    startRecording(selectedVideoType)
+                    doStartRecording()
                     showTypeDialog = false
                 }) {
                     Text(stringResource(R.string.start_recording))
@@ -496,38 +569,6 @@ fun VideoCaptureScreen(
             }
         )
     }
-}
-
-// Camera preview binding
-fun bindCameraPreview(previewView: PreviewView, lifecycleOwner: LifecycleOwner) {
-    val cameraProviderFuture = ProcessCameraProvider.getInstance(previewView.context)
-    cameraProviderFuture.addListener({
-        val cameraProvider = cameraProviderFuture.get()
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(previewView.surfaceProvider)
-        }
-        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-        try {
-            cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }, ContextCompat.getMainExecutor(previewView.context))
-}
-
-// Recording logic
-var mediaRecorder: MediaRecorder? = null
-var recordingFile: File? = null
-val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-
-fun startRecording(videoType: String) {
-    // This would start the actual recording using MediaRecorder
-    // For now, we'll simulate it
-}
-
-fun stopRecording() {
-    // This would stop the recording and trigger encryption/upload
 }
 
 // Video Item

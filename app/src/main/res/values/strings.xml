@@ -56,6 +56,14 @@
     <string name="home_safe_places_desc">Find help nearby</string>
     <string name="home_legal">Legal Help</string>
     <string name="home_legal_desc">Support resources</string>
+    <string name="home_ride_monitoring">Ride Monitoring</string>
+    <string name="home_ride_monitoring_desc">Track rides, detect route deviation</string>
+    <string name="home_check_ins">Check-ins</string>
+    <string name="home_check_ins_desc">Scheduled safety check-ins</string>
+    <string name="home_video_capture">Video Capture</string>
+    <string name="home_video_capture_desc">Encrypted video recording</string>
+    <string name="home_fake_call">Fake Call</string>
+    <string name="home_fake_call_desc">Simulate incoming call</string>
     <string name="sign_out">Sign Out</string>
 
     <!-- SOS -->
@@ -70,8 +78,14 @@
     <string name="sos_active_title">SOS Active</string>
     <string name="sos_active_description">Help has been alerted. Your live location is being shared.</string>
     <string name="emergency_called">Emergency called</string>
+    <string name="emergency_called_active">Emergency services alerted</string>
+    <string name="emergency_called_inactive">Will call 112 on activation</string>
     <string name="location_sharing">Location sharing</string>
+    <string name="location_sharing_active">Live location sharing active</string>
+    <string name="location_sharing_inactive">Location will be shared</string>
     <string name="admin_notified">Admin notified</string>
+    <string name="admin_notified_active">Admin portal notified</string>
+    <string name="admin_notified_inactive">Incident sent to backend</string>
     <string name="sos_emergency_info">For immediate danger, call the emergency services in your area.</string>
     <string name="deactivate_sos_confirmation_title">Deactivate SOS?</string>
     <string name="deactivate_sos_confirmation_message">Are you sure you are safe? This will stop alerting your emergency contacts.</string>
@@ -267,4 +281,13 @@
     <string name="sign_out_confirmation">Are you sure you want to sign out?</string>
     <string name="verified">Verified</string>
     <string name="user">User</string>
+    <string name="profile">Profile</string>
+    <string name="profile_desc">View and edit your profile</string>
+    <string name="help_and_support">Help &amp; Support</string>
+    <string name="help_and_support_desc">Get help and contact support</string>
+    <string name="about_rakshyaa">About Rakshyaa</string>
+    <string name="about_rakshyaa_desc">App information and legal</string>
+    <string name="settings">Settings</string>
+    <string name="settings_desc">Configure app preferences</string>
+    <string name="open_link">Open link</string>
 </resources>

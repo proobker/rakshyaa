@@ -1,5 +1,6 @@
 package com.rakshyaa.rakshyaa.viewmodels
 
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -78,5 +79,13 @@ class FakeCallViewModel @Inject constructor(
             ongoingCall = null,
             isCallActive = false
         )
+    }
+
+    fun startRingtone(context: Context) {
+        fakeCallService.startRingtone(context)
+    }
+
+    fun stopRingtone(context: Context) {
+        fakeCallService.stopRingtone()
     }
 }
