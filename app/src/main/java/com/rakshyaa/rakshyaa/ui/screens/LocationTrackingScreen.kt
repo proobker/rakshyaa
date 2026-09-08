@@ -7,8 +7,12 @@ import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,12 +37,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -88,9 +94,17 @@ fun LocationTrackingScreen(
 
     val hasPermissions = uiState.hasFineLocationPermission && uiState.hasBackgroundLocationPermission
 
+    val scrollState = rememberScrollState()
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
+    val mapExpanded by remember { derivedStateOf { scrollState.value > 100 } }
+    val mapHeight by animateDpAsState(
+        targetValue = if (mapExpanded) screenHeightDp else 200.dp
+    )
+
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -242,7 +256,10 @@ fun LocationTrackingScreen(
                 if (uiState.lastLocation != null) {
                     MapPreview(
                         latitude = uiState.lastLocation!!.latitude,
-                        longitude = uiState.lastLocation!!.longitude
+                        longitude = uiState.lastLocation!!.longitude,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(mapHeight)
                     )
                 }
             }
@@ -304,7 +321,11 @@ fun LocationTrackingScreen(
 }
 
 @Composable
-fun MapPreview(latitude: Double, longitude: Double) {
+fun MapPreview(
+    latitude: Double,
+    longitude: Double,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
     val mapView = remember {
         MapView(context).apply {
@@ -327,9 +348,8 @@ fun MapPreview(latitude: Double, longitude: Double) {
             marker.title = "Current Location"
             view.overlays.add(marker)
         },
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(200.dp)
             .clip(RoundedCornerShape(12.dp))
     )
 }

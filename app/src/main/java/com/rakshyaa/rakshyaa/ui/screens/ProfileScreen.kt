@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -93,7 +95,8 @@ fun ProfileScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Profile Header
@@ -111,8 +114,8 @@ fun ProfileScreen(
                     Box(
                         modifier = Modifier
                             .size(96.dp)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                            .clip(CircleShape),
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
                         val pictureModel = uiState.pictureFile ?: uiState.pictureUrl
@@ -603,8 +606,8 @@ fun ChipItem(
     Box(
         modifier = Modifier
             .padding(horizontal = 8.dp, vertical = 4.dp)
-            .background(color.copy(alpha = 0.15f))
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp)),
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+            .background(color.copy(alpha = 0.15f)),
         contentAlignment = Alignment.Center
     ) {
         Row(
