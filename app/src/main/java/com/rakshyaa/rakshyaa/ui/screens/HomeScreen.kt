@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -46,7 +47,6 @@ import com.rakshyaa.rakshyaa.R
 @Composable
 fun HomeScreen(
     userEmail: String?,
-    onSignOut: () -> Unit,
     onNavigate: (String) -> Unit,
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier
 ) {
@@ -156,11 +156,11 @@ fun HomeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+Spacer(modifier = Modifier.height(16.dp))
 
-        // Feature grid - 2 columns
+        // Feature grid - adaptive columns so text never gets cramped
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Adaptive(minSize = 156.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -175,20 +175,6 @@ fun HomeScreen(
                     isPrimary = feature.isPrimary
                 )
             }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Sign out button
-        Button(
-            onClick = onSignOut,
-            modifier = Modifier.fillMaxWidth(),
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                containerColor = colors.surfaceContainerHighest,
-                contentColor = onSurface
-            )
-        ) {
-            Text(stringResource(R.string.sign_out))
         }
     }
 }
@@ -213,14 +199,14 @@ fun FeatureCard(
     val onSurfaceVariant = colors.onSurfaceVariant
     val surfaceContainer = colors.surfaceContainer
     
-    Card(
+Card(
         onClick = onClick,
         colors = androidx.compose.material3.CardDefaults.cardColors(
             containerColor = if (isPrimary) feature.color.copy(alpha = 0.08f) else surfaceContainer
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .height(if (isPrimary) 140.dp else 120.dp),
+            .heightIn(min = if (isPrimary) 140.dp else 120.dp),
         shape = androidx.compose.material3.MaterialTheme.shapes.large
     ) {
         Box(
@@ -258,14 +244,16 @@ fun FeatureCard(
                         color = onSurface,
                         fontWeight = if (isPrimary) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Medium,
                         textAlign = TextAlign.Center,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                     Text(
                         text = feature.description,
                         style = MaterialTheme.typography.bodySmall,
                         color = onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        maxLines = 2
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
             }

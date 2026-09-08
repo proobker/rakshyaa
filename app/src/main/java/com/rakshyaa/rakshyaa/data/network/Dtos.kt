@@ -13,11 +13,21 @@ data class UserDto(
     val sub: String,
     val email: String? = null,
     val name: String? = null,
-    val picture: String? = null
+    val picture: String? = null,
+    val phone: String? = null,
+    val bio: String? = null
 )
 
 @Serializable
 data class MeResponse(val user: UserDto)
+
+@Serializable
+data class UpdateProfileRequest(
+    val name: String? = null,
+    val phone: String? = null,
+    val bio: String? = null,
+    val picture: String? = null
+)
 
 @Serializable
 data class BlobDto(
@@ -47,3 +57,17 @@ data class IncidentResponse(val ok: Boolean, val id: String? = null)
 
 @Serializable
 data class OkResponse(val ok: Boolean)
+
+@Serializable
+data class PlaceDto(
+    val id: String = "",
+    val name: String = "",
+    val address: String = "",
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
+    val type: String = "other",
+    val distanceMeters: Long = 0
+)
+
+@Serializable
+data class PlacesResponse(val places: List<PlaceDto> = emptyList())

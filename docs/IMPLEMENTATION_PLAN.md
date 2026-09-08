@@ -107,52 +107,45 @@ All placeholder screens accept `onNavigate` callback for future sub-navigation:
 
 ---
 
-## Phase 2: Location Tracking & Emergency Contacts (PLANNED)
+## Phase 2: Location Tracking & Emergency Contacts (COMPLETED — Sep 2026)
 
-### Features to Implement
-1. **LocationTrackingScreen**
-   - Start/stop background location tracking
-   - Foreground service integration (`LocationTrackingService`)
-   - Live location sharing with contacts
-   - Map preview with current location
-
-2. **EmergencyContactsScreen**
+### Features Implemented
+1. **LocationTrackingScreen** (`ui/screens/LocationTrackingScreen.kt`)
+   - Start/stop background location tracking with **two-step permission flow** (fine → background on API 23+/28+)
+   - Foreground service integration (`LocationTrackingService`) with **permission-before-`startForeground`** guard
+   - Live location state + permission/error banners
+2. **EmergencyContactsScreen** (`ui/screens/EmergencyContactsScreen.kt`)
    - CRUD for emergency contacts (name, phone, relationship)
    - Call/SMS quick actions
    - Integration with `EmergencyContactsService` (helper service)
-   - Contact picker from device contacts
-
 3. **Navigation Updates**
-   - Add location tracking toggle to Home screen
-   - Deep links for SOS activation from notifications
+   - Location tracking & emergency contacts reachable from Home grid + bottom nav
 
 ---
 
-## Phase 3: Ride Monitoring & Check-ins (PLANNED)
+## Phase 3: Ride Monitoring & Check-ins (COMPLETED — Sep 2026)
 
-### Features to Implement
-1. **RideMonitoringScreen**
-   - Ride start/end with route tracking
+### Features Implemented
+1. **RideMonitoringScreen** (`ui/screens/RideMonitoringScreen.kt`)
+   - Ride start/end with route tracking; **in-screen location-permission request** before start
    - Deviation detection using `RideMonitoringService`
-   - Emergency trigger on deviation
-   - Share ride link with contacts
-
-2. **CheckInScreen**
-   - Scheduled check-in timer
+   - Emergency/alerts on route deviation
+2. **CheckInScreen** (`ui/screens/CheckInScreen.kt`)
+   - Scheduled check-in timer with grace periods
    - Auto-SOS on missed check-in
-   - Integration with `CheckInService` (manifest service)
+   - Integration with `CheckInService` (manifest service, `specialUse` FGS type on Android 14+)
    - Customizable intervals
 
 ---
 
-## Phase 4: Advanced Features (PLANNED)
+## Phase 4: Advanced Features (COMPLETED — Sep 2026)
 
-### Features to Implement
-1. **VideoCaptureScreen** - Encrypted video recording (AES-256-GCM + Keystore)
-2. **SafePlacesScreen** - Nearby hospitals/police stations, user-added places
-3. **LegalHelpScreen** - Legal resources, emergency law contacts
-4. **FakeCallScreen** - Simulated incoming call with customizable caller
-5. **ProfileScreen** - User settings, backup management, app preferences
+### Features Implemented
+1. **VideoCaptureScreen** — encrypted video recording (AES-256-GCM + Keystore) with camera-style start/stop control bar, mm:ss overlay, FRONT/REAR + ON/OFF chips (CameraX `Recorder`; output via `outputResults.outputUri`)
+2. **SafePlacesScreen** — nearby hospitals/police stations + user-added places
+3. **LegalHelpScreen** — legal resources, emergency law contacts
+4. **FakeCallScreen** — simulated incoming call with **live delay slider (5–60s)** + phase machine (IDLE/COUNTDOWN/INCOMING/CONNECTED)
+5. **ProfileScreen** — Google avatar or photo-picker photo, phone/bio editing (`GET/PUT /user/profile`), sign-out (moved from Home), links to `https://rakshyaapp.github.io`
 
 ---
 
@@ -179,8 +172,7 @@ All placeholder screens accept `onNavigate` callback for future sub-navigation:
 
 ## Next Steps
 
-1. **Immediate**: Test APK on emulator, verify SOS flow end-to-end
-2. **Phase 2**: Implement LocationTrackingScreen with foreground service
-3. **Phase 2**: Implement EmergencyContactsScreen with contact picker
-4. **Integration**: Connect SOS activation to backend incident API
-5. **Polish**: Add user-provided color scheme and navigation assets
+1. **Immediate (done)**: Test APK on emulator, verify each feature end-to-end — all features now restored and verified (Sep 2026)
+2. **Restore-on-login**: `AppDataSync` pulls blobs + profile on session start — done
+3. **Release hardening**: production signing (register release SHA-1 as a second Android OAuth client), Play Store submission
+4. **Polish**: dark-mode fixes, string consistency across screens, notification deep links

@@ -2,6 +2,9 @@ local.properties
 supabase.properties
 backend.properties
 .gradle/
+.gradle/8.7/
+.kotlin/
+.claude/
 build/
 app/build/
 *.iml
@@ -9,4 +12,5 @@ app/build/
 captures/
 .externalNativeBuild/
 .cxx/
+
 

@@ -15,9 +15,28 @@ import javax.inject.Singleton
  * Stores sensitive data like authentication tokens securely.
  */
 @Singleton
-class SecurePreferences @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class SecurePreferences {
+
+    private val encryptedSharedPreferences: SharedPreferences
+
+    @Inject
+    constructor(@ApplicationContext context: Context) {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        encryptedSharedPreferences = EncryptedSharedPreferences.create(
+            context,
+            PREFS_NAME,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
+
+    /** Test constructor: uses a plain SharedPreferences instead of the Android Keystore. */
+    internal constructor(prefs: SharedPreferences) {
+        encryptedSharedPreferences = prefs
+    }
 
     companion object {
         private const val PREFS_NAME = "secure_prefs"
@@ -26,19 +45,6 @@ class SecurePreferences @Inject constructor(
         private const val KEY_USER_ID = "user_id"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
-    }
-
-    private val encryptedSharedPreferences: SharedPreferences by lazy {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        EncryptedSharedPreferences.create(
-            context,
-            PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
     }
 
     fun saveAccessToken(token: String) {

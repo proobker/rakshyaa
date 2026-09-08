@@ -79,6 +79,23 @@ class RideMonitoringService : Service() {
 
     private fun startRideMonitoring(threshold: Double) {
         if (isMonitoring) return
+
+        // Guard before spawning a location foreground service: without a granted
+        // location permission Android 14+ throws a SecurityException at startForeground.
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            isMonitoring = false
+            stopSelf()
+            return
+        }
+
         isMonitoring = true
         deviationThresholdM = threshold
         startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.ride_monitoring_active)))
@@ -88,18 +105,12 @@ class RideMonitoringService : Service() {
             sessionId = session.id
         }
 
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                10_000L,
-                5.0f,
-                locationListener
-            )
-        }
+        locationManager.requestLocationUpdates(
+            LocationManager.GPS_PROVIDER,
+            10_000L,
+            5.0f,
+            locationListener
+        )
     }
 
     private fun stopRideMonitoring() {

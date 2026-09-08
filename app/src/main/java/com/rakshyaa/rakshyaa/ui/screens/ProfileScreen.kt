@@ -3,6 +3,9 @@ package com.rakshyaa.rakshyaa.ui.screens
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
@@ -16,10 +19,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
@@ -56,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.rakshyaa.rakshyaa.R
 import com.rakshyaa.rakshyaa.viewmodels.ProfileViewModel
 
@@ -71,6 +77,7 @@ fun ProfileScreen(
     var showSignOutDialog by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(uiState.userName ?: "") }
     var editPhone by remember { mutableStateOf(uiState.userPhone ?: "") }
+    var editBio by remember { mutableStateOf(uiState.userBio ?: "") }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -108,12 +115,52 @@ fun ProfileScreen(
                             .clip(CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(48.dp)
-                        )
+                        val pictureModel = uiState.pictureFile ?: uiState.pictureUrl
+                        if (pictureModel != null) {
+                            AsyncImage(
+                                model = pictureModel,
+                                contentDescription = null,
+                                modifier = Modifier.size(96.dp).clip(CircleShape),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                        if (!uiState.isEditing) {
+                            val pickImage = rememberLauncherForActivityResult(
+                                ActivityResultContracts.PickVisualMedia()
+                            ) { uri -> uri?.let { viewModel.changePicture(it) } }
+                            IconButton(
+                                onClick = {
+                                    pickImage.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(28.dp)
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                            ) {
+                                Icon(
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = stringResource(R.string.change_photo),
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                        if (uiState.pictureLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(40.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 3.dp
+                            )
+                        }
                     }
 
                     if (uiState.isEditing) {
@@ -138,6 +185,15 @@ fun ProfileScreen(
                                     keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
                                 )
                             )
+                            androidx.compose.material3.OutlinedTextField(
+                                value = editBio,
+                                onValueChange = { editBio = it },
+                                label = { Text(stringResource(R.string.bio)) },
+                                placeholder = { Text(stringResource(R.string.bio_hint)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 2,
+                                maxLines = 4
+                            )
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -151,9 +207,9 @@ fun ProfileScreen(
                                     )
                                 ) { Text(stringResource(R.string.cancel)) }
                                 Button(
-                                    onClick = { viewModel.updateProfile(editName, editPhone) },
+                                    onClick = { viewModel.updateProfile(editName, editPhone, editBio) },
                                     modifier = Modifier.weight(1f)
-                                ) { Text(stringResource(R.string.save)) }
+                                ) { Text(stringResource(if (uiState.isSaving) R.string.save_changes else R.string.save)) }
                             }
                         }
                     } else {
@@ -177,6 +233,14 @@ fun ProfileScreen(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
                                 )
                             }
+                            uiState.userBio?.takeIf { it.isNotBlank() }?.let { bio ->
+                                Text(
+                                    text = bio,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     }
 
@@ -189,6 +253,7 @@ fun ProfileScreen(
                                 onClick = {
                                     editName = uiState.userName ?: ""
                                     editPhone = uiState.userPhone ?: ""
+                                    editBio = uiState.userBio ?: ""
                                     viewModel.toggleEditMode()
                                 },
                                 modifier = Modifier.weight(1f),
@@ -313,21 +378,21 @@ fun ProfileScreen(
                         title = stringResource(R.string.privacy_policy),
                         subtitle = stringResource(R.string.privacy_policy_desc),
                         trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        onClick = { browse(context, "https://rakshyaa.com/privacy") }
+                        onClick = { browse(context, "https://rakshyaapp.github.io/privacy") }
                     ),
                     SettingItem(
                         icon = Icons.Default.Verified,
                         title = stringResource(R.string.terms_of_service),
                         subtitle = stringResource(R.string.terms_of_service_desc),
                         trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        onClick = { browse(context, "https://rakshyaa.com/terms") }
+                        onClick = { browse(context, "https://rakshyaapp.github.io/terms") }
                     ),
                     SettingItem(
                         icon = Icons.Default.Person,
                         title = stringResource(R.string.help_support),
                         subtitle = stringResource(R.string.help_support_desc),
                         trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        onClick = { browse(context, "https://rakshyaa.com/support") }
+                        onClick = { browse(context, "https://rakshyaapp.github.io/support") }
                     )
                 )
             )

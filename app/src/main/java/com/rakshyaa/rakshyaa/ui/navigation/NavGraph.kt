@@ -66,7 +66,6 @@ object HomeScreen : BaseScreen(
     override fun render(navController: NavHostController, authViewModel: AuthViewModel) {
         com.rakshyaa.rakshyaa.ui.screens.HomeScreen(
             userEmail = authViewModel.authState.value.user?.email,
-            onSignOut = { authViewModel.signOut() },
             onNavigate = { route -> navController.navigate(route) }
         )
     }

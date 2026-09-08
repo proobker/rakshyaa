@@ -1,5 +1,9 @@
 package com.rakshyaa.rakshyaa.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,6 +58,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rakshyaa.rakshyaa.R
 import com.rakshyaa.rakshyaa.data.models.RideSession
@@ -66,9 +71,40 @@ fun RideMonitoringScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     var showStartDialog by remember { mutableStateOf(false) }
     var deviationThreshold by remember { mutableStateOf(uiState.deviationThreshold) }
+    var pendingThreshold by remember { mutableStateOf<Double?>(null) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        val granted = results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            results[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        viewModel.updateLocationPermission(granted)
+        val threshold = pendingThreshold
+        if (granted && threshold != null) {
+            pendingThreshold = null
+            viewModel.startRide(threshold)
+        } else if (!granted) {
+            showStartDialog = true
+        }
+    }
+
+    fun requestStartRide(threshold: Double) {
+        val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        viewModel.updateLocationPermission(hasFine)
+        if (hasFine) {
+            viewModel.startRide(threshold)
+        } else {
+            pendingThreshold = threshold
+            permissionLauncher.launch(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            )
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -251,6 +287,58 @@ fun RideMonitoringScreen(
 
             // Start Ride Dialog Trigger
             if (uiState.activeRide == null) {
+                if (!uiState.hasLocationPermission) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.size(24.dp).padding(end = 12.dp)
+                                )
+                                Column {
+                                    Text(
+                                        text = stringResource(R.string.permission_needed),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.permission_needed_desc),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                            Button(
+                                onClick = {
+                                    pendingThreshold = deviationThreshold
+                                    permissionLauncher.launch(
+                                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error,
+                                    contentColor = MaterialTheme.colorScheme.onError
+                                )
+                            ) {
+                                Text(stringResource(R.string.grant_permission))
+                            }
+                        }
+                    }
+                }
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -345,7 +433,7 @@ fun RideMonitoringScreen(
             deviationThreshold = deviationThreshold,
             onThresholdChange = { deviationThreshold = it },
             onConfirm = {
-                viewModel.startRide(deviationThreshold)
+                requestStartRide(deviationThreshold)
                 showStartDialog = false
             },
             onDismiss = { showStartDialog = false }

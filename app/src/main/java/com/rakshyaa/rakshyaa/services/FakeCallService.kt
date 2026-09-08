@@ -9,6 +9,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.provider.Settings
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,7 +22,9 @@ data class OngoingFakeCall(
 )
 
 @Singleton
-class FakeCallService @Inject constructor() {
+class FakeCallService @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     private var current: OngoingFakeCall? = null
     private var mediaPlayer: MediaPlayer? = null
@@ -58,7 +61,7 @@ class FakeCallService @Inject constructor() {
 
     fun currentCall(): OngoingFakeCall? = current
 
-    fun startRingtone(context: Context) {
+    fun startRingtone() {
         stopRingtone()
         try {
             val ringtoneUri = Settings.System.DEFAULT_RINGTONE_URI

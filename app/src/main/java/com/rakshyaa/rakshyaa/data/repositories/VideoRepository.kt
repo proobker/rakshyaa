@@ -73,14 +73,14 @@ class VideoRepository @Inject constructor(
     }
 
     private suspend fun loadAll(): List<VideoRecord> {
-        val raw = store.loadPlain(key) ?: return emptyList()
+        val raw = sync.getOrPull(key) ?: return emptyList()
         return runCatching { json.decodeFromString(listSerializer, raw) }
             .getOrElse { emptyList() }
     }
 
     private suspend fun modify(transform: (List<VideoRecord>) -> List<VideoRecord>) {
         val updated = transform(loadAll())
-        store.savePlain(key, json.encodeToString(listSerializer, updated))
+        sync.saveAndSync(key, json.encodeToString(listSerializer, updated))
     }
 
     private fun storeFileDirFor(videoId: String): File {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -258,7 +260,7 @@ private fun InfoCard(
     val surfaceContainer = colors.surfaceContainer
     
     Card(
-        modifier = modifier.height(80.dp),
+        modifier = modifier.heightIn(min = 96.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isActive) color.copy(alpha = 0.1f) else surfaceContainer
         )
@@ -269,6 +271,7 @@ private fun InfoCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -282,16 +285,21 @@ private fun InfoCard(
                     text = title,
                     style = MaterialTheme.typography.labelLarge,
                     color = if (isActive) color else onSurface,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    softWrap = false,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
             }
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isActive) color.copy(alpha = 0.8f) else onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                maxLines = 1
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

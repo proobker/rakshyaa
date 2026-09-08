@@ -2,7 +2,9 @@ package com.rakshyaa.rakshyaa.viewmodels
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.content.ContextCompat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,6 +29,7 @@ class RideMonitoringViewModel @Inject constructor(
         val rideHistory: List<RideSession> = emptyList(),
         val isLoading: Boolean = false,
         val isMonitoring: Boolean = false,
+        val hasLocationPermission: Boolean = false,
         val error: String? = null,
         val deviationThreshold: Double = 50.0
     )
@@ -35,7 +38,15 @@ class RideMonitoringViewModel @Inject constructor(
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     init {
+        updateLocationPermission(
+            ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        )
         loadRides()
+    }
+
+    fun updateLocationPermission(granted: Boolean) {
+        _uiState.value = _uiState.value.copy(hasLocationPermission = granted)
     }
 
     fun loadRides() {
@@ -53,6 +64,12 @@ class RideMonitoringViewModel @Inject constructor(
     }
 
     fun startRide(threshold: Double = 50.0) {
+        if (!_uiState.value.hasLocationPermission) {
+            _uiState.value = _uiState.value.copy(
+                error = "Location permission is required to monitor a ride"
+            )
+            return
+        }
         val intent = Intent(context, RideMonitoringService::class.java).apply {
             action = RideMonitoringService.ACTION_START_RIDE_MONITORING
             putExtra(RideMonitoringService.EXTRA_DEVIATION_THRESHOLD_M, threshold)
@@ -64,7 +81,7 @@ class RideMonitoringViewModel @Inject constructor(
                 context.startService(intent)
             }
         }
-        _uiState.value = _uiState.value.copy(deviationThreshold = threshold, isMonitoring = true)
+        _uiState.value = _uiState.value.copy(deviationThreshold = threshold, isMonitoring = true, error = null)
     }
 
     fun stopRide() {

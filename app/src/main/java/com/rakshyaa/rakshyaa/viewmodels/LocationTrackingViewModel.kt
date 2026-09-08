@@ -70,31 +70,50 @@ class LocationTrackingViewModel @Inject constructor(
         }
     }
 
-    fun requestPermissions(activity: androidx.activity.ComponentActivity, launcher: androidx.activity.result.ActivityResultLauncher<Array<String>>) {
-        val perms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    /** Launches the FINE + COARSE permission request (step 1 of the two-step flow). */
+    fun requestFineLocation(launcher: androidx.activity.result.ActivityResultLauncher<Array<String>>) {
+        launcher.launch(
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                Manifest.permission.ACCESS_COARSE_LOCATION
             )
-        } else {
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-        launcher.launch(perms)
+        )
     }
 
-    fun onPermissionResult(granted: BooleanArray) {
-        val fine = granted.firstOrNull() == true
-        val bg = if (granted.size > 1) granted[1] == true else true
+    /** Called after the FINE/COARSE request. Starts tracking once fine location is granted. */
+    fun onFinePermissionResult(granted: Boolean) {
         _uiState.value = _uiState.value.copy(
-            hasFineLocationPermission = fine,
-            hasBackgroundLocationPermission = bg
+            hasFineLocationPermission = granted,
+            error = if (!granted) "Location permission is required to track your location" else null
         )
-        if (fine && bg) {
+        if (granted) {
             startTracking()
+        } else {
+            refreshState()
         }
+    }
+
+    /** Called after the separate ACCESS_BACKGROUND_LOCATION request (step 2, Android 10+). */
+    fun onBackgroundPermissionResult(granted: Boolean) {
+        _uiState.value = _uiState.value.copy(hasBackgroundLocationPermission = granted)
+        refreshState()
     }
 
     fun startTracking() {
+        val fine = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!fine && !coarse) {
+            _uiState.value = _uiState.value.copy(
+                error = "Location permission is required to start tracking"
+            )
+            return
+        }
         _uiState.value = _uiState.value.copy(isTracking = true)
         val intent = Intent(context, LocationTrackingService::class.java).apply {
             action = LocationTrackingService.ACTION_START_LOCATION_UPDATES

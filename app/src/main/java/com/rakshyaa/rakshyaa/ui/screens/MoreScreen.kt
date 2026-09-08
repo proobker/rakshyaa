@@ -84,7 +84,7 @@ fun MoreScreenContent(
                     title = stringResource(R.string.about_rakshyaa),
                     subtitle = stringResource(R.string.about_rakshyaa_desc),
                     onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rakshyaa.com/about"))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rakshyaapp.github.io/about"))
                         context.startActivity(intent)
                     }
                 )
