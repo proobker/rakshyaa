@@ -7,13 +7,13 @@ backend as **opaque encrypted blobs** — the server never sees plaintext.
 
 **Current Version**: 1.1
 
-## Features (all wired into the UI and verified on the emulator, Sep 2026)
+## Features:
 
-- **Authentication (verified)**: Google sign-in via Credential Manager; backend verifies the ID
+- **Authentication**: Google sign-in via Credential Manager; backend verifies the ID
   token and issues a session JWT.
 - **Restore-on-login**: on session start, `AppDataSync` pulls all encrypted backup blobs and the
   profile fields back from the backend, so data survives logout/reinstall.
-- **Profile (More tab)**: Google avatar or photo-picker photo, editable phone + bio
+- **Profile**: Google avatar or photo-picker photo, editable phone + bio
   (`GET/PUT /user/profile`), sign-out moved here from Home. Website links point at
   `https://rakshyaapp.github.io`.
 - **Home dashboard**: adaptive feature grid (responsive columns) with single-line card text.
