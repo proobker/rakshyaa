@@ -21,11 +21,14 @@ class SafePlacesViewModel @Inject constructor(
     data class UiState(
         val nearbyPlaces: List<SafePlace> = emptyList(),
         val userPlaces: List<SafePlace> = emptyList(),
+        val closestPlace: SafePlace? = null,
         val isLoading: Boolean = false,
         val error: String? = null,
         val searchRadius: Double = 5000.0,
         val currentLatitude: Double = 27.7172,
-        val currentLongitude: Double = 85.3240
+        val currentLongitude: Double = 85.3240,
+        val locationUnavailable: Boolean = false,
+        val isLive: Boolean = false
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -35,20 +38,37 @@ class SafePlacesViewModel @Inject constructor(
         loadWithCurrentLocation()
     }
 
+    private companion object {
+        const val FALLBACK_LAT = 27.7172
+        const val FALLBACK_LON = 85.3240
+    }
+
     fun loadWithCurrentLocation() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            val lastLoc = locationRepository.getLastKnownLocation()
-            val lat = lastLoc?.latitude ?: 27.7172
-            val lon = lastLoc?.longitude ?: 85.3240
+            val loc = locationRepository.currentLocation()
+            if (loc == null) {
+                val fallback = safePlacesService.offlineFallback(FALLBACK_LAT, FALLBACK_LON, _uiState.value.searchRadius)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    locationUnavailable = true,
+                    nearbyPlaces = fallback.nearby,
+                    closestPlace = fallback.closest,
+                    isLive = false
+                )
+                return@launch
+            }
             _uiState.value = _uiState.value.copy(
-                currentLatitude = lat,
-                currentLongitude = lon
+                currentLatitude = loc.latitude,
+                currentLongitude = loc.longitude,
+                locationUnavailable = false
             )
-            val places = safePlacesService.nearby(lat, lon, _uiState.value.searchRadius)
+            val result = safePlacesService.nearby(loc.latitude, loc.longitude, _uiState.value.searchRadius)
             _uiState.value = _uiState.value.copy(
-                nearbyPlaces = places,
-                isLoading = false
+                nearbyPlaces = result.nearby,
+                closestPlace = result.closest,
+                isLoading = false,
+                isLive = result.isLive
             )
             loadUserPlaces()
         }
@@ -59,12 +79,15 @@ class SafePlacesViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 isLoading = true,
                 currentLatitude = latitude,
-                currentLongitude = longitude
+                currentLongitude = longitude,
+                locationUnavailable = false
             )
-            val places = safePlacesService.nearby(latitude, longitude, _uiState.value.searchRadius)
+            val result = safePlacesService.nearby(latitude, longitude, _uiState.value.searchRadius)
             _uiState.value = _uiState.value.copy(
-                nearbyPlaces = places,
-                isLoading = false
+                nearbyPlaces = result.nearby,
+                closestPlace = result.closest,
+                isLoading = false,
+                isLive = result.isLive
             )
         }
     }

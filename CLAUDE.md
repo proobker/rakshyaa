@@ -76,7 +76,7 @@ Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
 | --- | --- |
 | Build debug APK | `./gradlew assembleDebug` |
 | Output | `app/build/outputs/apk/debug/app-debug.apk` |
-| Tests | `./gradlew test` (40 unit tests — required before declaring work complete) |
+| Tests | `./gradlew test` (47 unit tests — required before declaring work complete) |
 | Lint | `./gradlew lint` |
 | Fast type-check | `./gradlew compileDebugKotlin` |
 

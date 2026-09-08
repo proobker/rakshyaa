@@ -1,7 +1,11 @@
 package com.rakshyaa.rakshyaa.ui.screens
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +31,7 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.LocalPolice
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -93,9 +98,28 @@ fun SafePlacesScreen(
     val types = listOf(
         "user" to Icons.Default.Favorite,
         "hospital" to Icons.Default.LocalHospital,
+        "clinic" to Icons.Default.MedicalServices,
         "police" to Icons.Default.LocalPolice,
         "fire" to Icons.Default.LocalFireDepartment
     )
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        val granted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) viewModel.loadWithCurrentLocation()
+    }
+
+    fun requestLocationPermission() {
+        locationPermissionLauncher.launch(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
+            } else {
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+        )
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -175,6 +199,50 @@ fun SafePlacesScreen(
                 }
             }
 
+            if (uiState.locationUnavailable) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Location access is off",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            Text(
+                                text = "Allow location to find safe places near you.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                        Button(
+                            onClick = ::requestLocationPermission,
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.tertiary,
+                                contentColor = MaterialTheme.colorScheme.onTertiary
+                            )
+                        ) {
+                            Text("Allow")
+                        }
+                    }
+                }
+            }
+
             // Nearby Places Section
             if (uiState.nearbyPlaces.isNotEmpty()) {
                 Column(
@@ -199,6 +267,31 @@ fun SafePlacesScreen(
                                 place = place,
                                 isUserPlace = false,
                                 onNavigate = { navigateToPlace(context, place) },
+                                onDelete = null
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Closest Match Section (shown when nothing is within the search radius)
+            uiState.closestPlace?.let { closest ->
+                if (uiState.nearbyPlaces.isEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Nothing within ${(uiState.searchRadius / 1000).toInt()} km — closest match ${formatDistance(closest.distanceMeters)} away",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            SafePlaceCard(
+                                place = closest,
+                                isUserPlace = false,
+                                onNavigate = { navigateToPlace(context, closest) },
                                 onDelete = null
                             )
                         }
@@ -247,7 +340,7 @@ fun SafePlacesScreen(
                         }
                     }
                 }
-            } else if (uiState.nearbyPlaces.isEmpty()) {
+            } else if (uiState.nearbyPlaces.isEmpty() && uiState.closestPlace == null) {
                 // Empty State
                 Column(
                     modifier = Modifier
@@ -462,12 +555,14 @@ fun SafePlaceCard(
     val colors = MaterialTheme.colorScheme
     val typeIcon = when (place.type) {
         "hospital" -> Icons.Default.LocalHospital
+        "clinic" -> Icons.Default.MedicalServices
         "police" -> Icons.Default.LocalPolice
         "fire" -> Icons.Default.LocalFireDepartment
         else -> Icons.Default.Favorite
     }
     val typeColor = when (place.type) {
         "hospital" -> Color(0xFFE91E63)
+        "clinic" -> Color(0xFF4CAF50)
         "police" -> Color(0xFF2196F3)
         "fire" -> Color(0xFFFF5722)
         else -> Color(0xFF009688)
@@ -517,6 +612,13 @@ fun SafePlaceCard(
                             maxLines = 1
                         )
                     }
+                    if (place.distanceMeters > 0) {
+                        Text(
+                            text = "${formatDistance(place.distanceMeters)} away",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colors.primary
+                        )
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -549,6 +651,11 @@ fun SafePlaceCard(
             }
         }
     }
+}
+
+fun formatDistance(meters: Long): String = when {
+    meters < 1000 -> "$meters m"
+    else -> "%.1f km".format(meters / 1000.0)
 }
 
 fun navigateToPlace(context: android.content.Context, place: SafePlace) {
