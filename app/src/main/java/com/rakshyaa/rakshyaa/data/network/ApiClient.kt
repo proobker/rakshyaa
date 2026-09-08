@@ -64,6 +64,9 @@ class ApiClient @Inject constructor(
     suspend fun postJson(path: String, body: String): String =
         execute(authedRequest(path, "POST", body))
 
+    suspend fun putJson(path: String, body: String): String =
+        execute(authedRequest(path, "PUT", body))
+
     suspend fun get(path: String): String =
         execute(authedRequest(path, "GET"))
 
@@ -85,4 +88,15 @@ class ApiClient @Inject constructor(
 
     suspend fun delete(path: String): String =
         execute(authedRequest(path, "DELETE"))
+
+    /** Fetches places near the given coordinates (sorted by distance) from the backend. */
+    suspend fun getNearbyPlaces(latitude: Double, longitude: Double): List<PlaceDto> =
+        withContext(Dispatchers.IO) {
+            val request = authedRequest(
+                "/places/nearby?lat=$latitude&lon=$longitude",
+                "GET"
+            )
+            val body = execute(request)
+            json.decodeFromString<PlacesResponse>(body).places
+        }
 }

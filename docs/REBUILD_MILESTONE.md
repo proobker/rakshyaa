@@ -14,7 +14,7 @@ This document summarizes the complete rewrite of the Rakshyaa Android app and ba
 | **Services (9 total)** | 4 manifest `@AndroidEntryPoint` foreground services (SOS, Location, Ride, CheckIn) + 5 helper `@Singleton` (VideoEncryption, EmergencyContacts, FakeCall, LegalHelp, SafePlaces). All wired to real repositories. |
 | **Repositories** | LocationRepository (encrypted local log), VideoRepository (AES-256-GCM + SyncManager), plus contacts, rides, check-ins, incidents, legal, safe places — all using real APIs. |
 | **Models** | `LocationRecord`, `VideoRecord` added. |
-| **UI** | `LoginScreen` (Google-only), `HomeScreen` (dashboard + sign-out), `MainActivity` (switches Login/Home on auth state). Removed broken: `SignupScreen`, `ProfileSetupScreen`, `SOSScreen`, `LocationPermissionsHelper`, `VideoCaptureUtil`. |
+| **UI** | `LoginScreen` (Google-only), `HomeScreen` (dashboard; sign-out now on Profile), `MainActivity` (switches Login/Home on auth state). Removed broken: `SignupScreen`, `ProfileSetupScreen`, `SOSScreen`, `LocationPermissionsHelper`, `VideoCaptureUtil`. All feature screens restored afterward (SOS, tracking, rides, check-ins, contacts, video, safe places, legal, fake call, profile). |
 | **Utils** | `GeoUtils` fixed (no nested companion object; pre-API-33 `Location` ctor). `CryptoManager` / `SecurePreferences` / `EncryptedLocalStore` intact. |
 | **Config** | `backend.properties` → `BuildConfig.BACKEND_BASE_URL` + `GOOGLE_WEB_CLIENT_ID`. `network_security_config.xml` for cleartext dev (`10.0.2.2`). |
 | **Deps** | Added `androidx.hilt:hilt-navigation-compose:1.2.0` for `hiltViewModel()`. |
@@ -70,30 +70,49 @@ This document summarizes the complete rewrite of the Rakshyaa Android app and ba
 | Cleartext HTTP blocked | Added `network_security_config.xml` allowing `10.0.2.2` + `localhost` |
 | `developer console isn't setup properly` (28444) | Created Android OAuth client in console; waited for propagation |
 | `getCredentialAsync no provider dependencies found` | Used google_apis_playstore AVD + signed-in Google account |
+| Location "grant" button crash | Permission checked before `startForeground` in Location/Ride services; screen two-step permission flow (FINE → BACKGROUND) |
+| Android 14 check-in crash (`MissingForegroundServiceTypeException`) | Added `foregroundServiceType="specialUse"` + property + `FOREGROUND_SERVICE_SPECIAL_USE` to CheckInService |
+| CameraX `outputResults.outputFile` unresolved | Use `outputUri.path` → `File` (CameraX 1.3.x) |
+| Restore-on-login didn't trigger | Move `AppDataSync.restoreAll()` trigger from `AuthRepository` (Hilt cycle) to `AuthViewModel` init observing `isLoggedIn` |
 
 ---
 
 ## Current App State (v1.1)
 
-**Verified working**:
+**Verified working (Sep 2026)**:
 - Google sign-in → backend token exchange → Home screen
 - All 9 services compile, register in manifest
 - All repositories compile with real APIs
 - APK builds: `app/build/outputs/apk/debug/app-debug.apk`
+- Unit suite: `./gradlew test` green (40 tests, debug + release)
 
-**Not yet wired into UI** (next incremental steps):
-- SOS screen → `SOSActivationService` + `SOSViewModel`
-- Location tracking screen → `LocationTrackingService`
-- Ride monitoring screen → `RideMonitoringService` + `RideRepository`
-- Check-ins screen → `CheckInService` + `CheckInRepository`
-- Emergency contacts screen → `EmergencyContactsService`
-- Video capture/upload → `VideoEncryptionService` + `VideoRepository` + CameraX
-- Safe places screen → `SafePlacesService`
-- Legal help screen → `LegalHelpService`
-- Fake call screen → `FakeCallService`
-- Profile/settings screen
+**All feature screens restored & wired to real services/repositories**:
 
-Each will be restored incrementally from the existing wired repositories/services.
+| Screen | Backed by | Status |
+|--------|-----------|--------|
+| SOS | `SOSActivationService` + `SOSViewModel` + incidents API | wired/verified |
+| Location tracking | `LocationTrackingService` (two-step permission flow) | wired/verified |
+| Ride monitoring | `RideMonitoringService` + `RideRepository` (in-screen permission request) | wired/verified |
+| Check-ins | `CheckInService` + `CheckInRepository` (`specialUse` FGS) | wired/verified |
+| Emergency contacts | `EmergencyContactsService` | wired/verified |
+| Safe places | `SafePlacesService` | wired/verified |
+| Legal help | `LegalHelpService` | wired/verified |
+| Fake call | `FakeCallService` (delay slider + phase machine) | wired/verified |
+| Encrypted video | `VideoEncryptionService` + `VideoRepository` + CameraX cut-through | wired/verified |
+| Profile (More tab) | `ProfileRepository` + `GET/PUT /user/profile` (photo/bio, sign-out) | wired/verified |
+
+**Post-milestone fixes**:
+- **Permission crash**: all tracking/ride services check location permission **before**
+  `startForeground` and `stopSelf()` when denied.
+- **Android 14 check-in crash**: `foregroundServiceType="specialUse"` +
+  `FOREGROUND_SERVICE_SPECIAL_USE` + property added to `CheckInService`.
+- **Restore-on-login**: `data/sync/AppDataSync.kt` pulls remote blobs + profile on session
+  start (triggered from `AuthViewModel`; `AuthRepository` must NOT depend on `AppDataSync` —
+  it creates a Hilt cycle `AuthRepository → AppDataSync → ProfileRepository → AuthRepository`).
+- **CameraX API**: `Recorder` output resolved via `outputResults.outputUri` (no `outputFile`
+  property in CameraX 1.3.x).
+- **Stale tests removed/replaced**: all tests now target current APIs (Robolectric + Mockito
+  inline + Truth + coroutines-test).
 
 ---
 

@@ -18,6 +18,7 @@ import com.rakshyaa.rakshyaa.ui.screens.HomeScreen
 import com.rakshyaa.rakshyaa.ui.screens.LegalHelpScreen
 import com.rakshyaa.rakshyaa.ui.screens.LocationTrackingScreen
 import com.rakshyaa.rakshyaa.ui.screens.LoginScreen
+import com.rakshyaa.rakshyaa.ui.screens.MoreScreenContent
 import com.rakshyaa.rakshyaa.ui.screens.ProfileScreen
 import com.rakshyaa.rakshyaa.ui.screens.RideMonitoringScreen
 import com.rakshyaa.rakshyaa.ui.screens.SafePlacesScreen
@@ -65,7 +66,6 @@ object HomeScreen : BaseScreen(
     override fun render(navController: NavHostController, authViewModel: AuthViewModel) {
         com.rakshyaa.rakshyaa.ui.screens.HomeScreen(
             userEmail = authViewModel.authState.value.user?.email,
-            onSignOut = { authViewModel.signOut() },
             onNavigate = { route -> navController.navigate(route) }
         )
     }
@@ -123,7 +123,7 @@ object MoreScreen : BaseScreen(
 ) {
     @Composable
     override fun render(navController: NavHostController, authViewModel: AuthViewModel) {
-        androidx.compose.material3.Text(text = "More Screen")
+        MoreScreenContent(onNavigate = { route -> navController.navigate(route) })
     }
 }
 

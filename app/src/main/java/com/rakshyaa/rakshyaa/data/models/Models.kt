@@ -64,7 +64,8 @@ data class SafePlace(
     val address: String = "",
     val latitude: Double,
     val longitude: Double,
-    val type: String = "other" // hospital | police | fire | user
+    val type: String = "other", // hospital | clinic | police | fire | user
+    val distanceMeters: Long = 0
 )
 
 @Serializable

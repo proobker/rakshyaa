@@ -10,7 +10,6 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowNotificationManager
 import com.google.common.truth.Truth.assertThat
 
 @Config(sdk = [33])
@@ -34,9 +33,11 @@ class SOSActivationServiceUnitTest {
         val intent = Intent(ApplicationProvider.getApplicationContext(), SOSActivationService::class.java).apply {
             action = SOSActivationService.ACTION_DEACTIVATE_SOS
         }
-        serviceController.startCommand(intent, 0)
-        val nm = org.robolectric.RuntimeEnvironment.getApplication()
-            .getSystemService(android.app.NotificationManager::class.java) as ShadowNotificationManager
+        serviceController.withIntent(intent).startCommand(0, 0)
+        val nm = org.robolectric.Shadows.shadowOf(
+            org.robolectric.RuntimeEnvironment.getApplication()
+                .getSystemService(android.app.NotificationManager::class.java)
+        )
         assertThat(nm.allNotifications).isEmpty()
         serviceController.destroy()
     }

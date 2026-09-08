@@ -65,21 +65,32 @@ class LocationTrackingService : Service() {
 
     private fun startLocationUpdates() {
         if (isTracking) return
-        isTracking = true
-        startForeground(NOTIFICATION_ID, buildNotification())
 
+        // Guard before spawning a location foreground service: without a granted
+        // location permission Android 14+ throws a SecurityException at startForeground.
         if (ActivityCompat.checkSelfPermission(
                 this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
+            ) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
         ) {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                5 * 60 * 1000L,
-                100.0f,
-                locationListener
-            )
+            isTracking = false
+            stopSelf()
+            return
         }
+
+        isTracking = true
+        startForeground(NOTIFICATION_ID, buildNotification())
+
+        locationManager.requestLocationUpdates(
+            LocationManager.GPS_PROVIDER,
+            5 * 60 * 1000L,
+            100.0f,
+            locationListener
+        )
     }
 
     private fun stopLocationUpdates() {

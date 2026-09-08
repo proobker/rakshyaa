@@ -7,20 +7,28 @@ backend as **opaque encrypted blobs** — the server never sees plaintext.
 
 **Current Version**: 1.1
 
-## Features (verified: Auth + Home screen; other screens pending restore)
+## Features (all wired into the UI and verified on the emulator, Sep 2026)
 
 - **Authentication (verified)**: Google sign-in via Credential Manager; backend verifies the ID
   token and issues a session JWT.
-- **Location Tracking**: Foreground service for continuous GPS tracking.
+- **Restore-on-login**: on session start, `AppDataSync` pulls all encrypted backup blobs and the
+  profile fields back from the backend, so data survives logout/reinstall.
+- **Profile (More tab)**: Google avatar or photo-picker photo, editable phone + bio
+  (`GET/PUT /user/profile`), sign-out moved here from Home. Website links point at
+  `https://rakshyaapp.github.io`.
+- **Home dashboard**: adaptive feature grid (responsive columns) with single-line card text.
+- **Location Tracking**: permission-safe start/stop foreground service (fine → background
+  two-step permission flow); continuous GPS tracking.
 - **SOS Emergency System**:
   - SOS triggering with a short countdown to prevent false alarms
   - Emergency calling integration
   - Incident reporting with location sharing to the backend
-- **Encrypted Video Capture**:
-  - Client-side encryption using AES-256-GCM (key in Android Keystore)
-  - Front/rear camera capture with CameraX
-  - Optional backup of the encrypted blob to the backend
+- **Encrypted Video Capture (camera-style UI)**:
+  - CameraX `Recorder` with start/stop control bar and live mm:ss overlay
+  - FRONT/REAR + recording ON/OFF chips
+  - Client-side AES-256-GCM encryption (key in Android Keystore) + optional backend backup
 - **Ride Monitoring**:
+  - Start ride with in-screen location-permission request
   - GPS logging with route deviation detection (Haversine formula)
   - Alerts when leaving safe zones
 - **Safe Places Discovery**:
@@ -28,12 +36,14 @@ backend as **opaque encrypted blobs** — the server never sees plaintext.
   - User-submitted safe places
 - **Check-ins System**:
   - Scheduled safety check-ins with grace periods
+  - Foreground service with `specialUse` type (Android 14-safe)
   - Geofence validation and escalation procedures
 - **Emergency Contacts Management**:
   - Encrypted storage of contact information
   - Escalation procedures for missed check-ins
-- **Fake Call Feature**: Realistic incoming call simulation for escape scenarios.
-- **Legal Help Section**: Offline access to legal resources and support information.
+- **Fake Call Feature**: realistic incoming-call simulation with a **live delay slider (5–60s)**
+  and a phase machine (idle → countdown → incoming → connected) for escape scenarios.
+- **Legal Help Section**: offline access to legal resources and support information.
 
 ## Repository Layout
 
@@ -111,10 +121,10 @@ the console to map package+SHA-1; its client ID is **not** used in code.
 
 1. **Android App (Client)** — Google sign-in, foreground services for location/SOS/ride
    monitoring/check-ins, CameraX video capture, encrypted local storage via Android Keystore,
-   and encrypted-blob backup to the backend.
-2. **Backend (self-hosted)** — verifies Google ID tokens, issues session JWTs, and stores
-   opaque encrypted backup blobs (SQLite metadata + disk files). It never holds or reads
-   plaintext.
+   and encrypted-blob backup + **restore-on-login** (`data/sync/AppDataSync.kt`) to the backend.
+2. **Backend (self-hosted)** — verifies Google ID tokens, issues session JWTs, serves profile
+   (`GET/PUT /user/profile`) and stores opaque encrypted backup blobs (SQLite metadata + disk
+   files). It never holds or reads plaintext.
 3. **Admin portal** — web interface that reads backend incident data via an API key.
 
 ## Security Model
@@ -139,6 +149,21 @@ the console to map package+SHA-1; its client ID is **not** used in code.
 
 The APK builds with `compileSdk 34`, `minSdk 24`, `targetSdk 34`, version `1.1`.
 Output: `app/build/outputs/apk/debug/app-debug.apk`.
+
+## Tests
+
+The unit-test suite was rewritten against the current stack (all stale Supabase-era tests
+deleted/replaced):
+
+```bash
+cd rakshyaa
+./gradlew test          # 40 unit tests — Robolectric + Mockito (inline) + Truth + coroutines-test
+```
+
+Coverage highlights: `FakeCallService` phase machine, `AuthViewModel` (login restore trigger),
+`SecurePreferences`, `LegalHelpService`, `EmergencyContactsService`, `LocationRepository`,
+`SOSActivationService`. `SecurePreferences` exposes an internal `SharedPreferences` constructor
+so Robolectric doesn't need the Android Keystore.
 
 ## License
 

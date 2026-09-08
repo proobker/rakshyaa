@@ -3,8 +3,8 @@ package com.rakshyaa.rakshyaa.viewmodels
 import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rakshyaa.rakshyaa.data.auth.AuthRepository
 import com.rakshyaa.rakshyaa.data.models.VideoRecord
-import com.rakshyaa.rakshyaa.services.VideoEncryptionService
 import com.rakshyaa.rakshyaa.data.repositories.VideoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class VideoCaptureViewModel @Inject constructor(
     private val videoRepository: VideoRepository,
-    private val videoEncryptionService: VideoEncryptionService
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     data class UiState(
@@ -49,8 +49,9 @@ class VideoCaptureViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isEncrypting = true, isUploading = true)
             try {
+                val userId = authRepository.state.value.user?.sub ?: "current_user"
                 val record = videoRepository.uploadEncryptedVideo(
-                    userId = "current_user", // Will be replaced with actual user ID
+                    userId = userId,
                     videoFile = videoFile,
                     videoType = videoType
                 )
@@ -84,5 +85,13 @@ class VideoCaptureViewModel @Inject constructor(
                 videos = _uiState.value.videos.filterNot { it.id == videoId }
             )
         }
+    }
+
+    fun setRecording(isRecording: Boolean) {
+        _uiState.value = _uiState.value.copy(isRecording = isRecording)
+    }
+
+    fun setError(error: String?) {
+        _uiState.value = _uiState.value.copy(error = error)
     }
 }

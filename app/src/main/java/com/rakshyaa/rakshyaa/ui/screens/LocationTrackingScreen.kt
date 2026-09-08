@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rakshyaa.rakshyaa.R
 import com.rakshyaa.rakshyaa.data.models.LocationRecord
@@ -65,12 +66,23 @@ fun LocationTrackingScreen(
     val context = LocalContext.current
     val activity = remember { context as ComponentActivity }
 
+    val backgroundPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        viewModel.onBackgroundPermissionResult(results[Manifest.permission.ACCESS_BACKGROUND_LOCATION] == true)
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
-        val granted = results.values.toBooleanArray()
-        if (granted.all { it == true }) {
-            viewModel.startTracking()
+        val fine = results[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        viewModel.onFinePermissionResult(fine)
+        // Step 2 (Android 10+): request background separately so it isn't auto-denied
+        // by being bundled with the foreground permission request.
+        if (fine && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
+        ) {
+            backgroundPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION))
         }
     }
 
@@ -142,7 +154,7 @@ fun LocationTrackingScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Button(
-                            onClick = { viewModel.requestPermissions(activity, permissionLauncher) },
+                            onClick = { viewModel.requestFineLocation(permissionLauncher) },
                             modifier = Modifier.weight(1f),
                             colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error,
@@ -278,7 +290,7 @@ fun LocationTrackingScreen(
         // Sync Now Button
         if (hasPermissions) {
             Button(
-                onClick = { /* SyncManager auto-syncs on save */ },
+                onClick = { viewModel.syncNow() },
                 modifier = Modifier.fillMaxWidth(),
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,

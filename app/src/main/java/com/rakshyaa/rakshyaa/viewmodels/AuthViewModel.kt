@@ -4,11 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rakshyaa.rakshyaa.data.auth.AuthRepository
 import com.rakshyaa.rakshyaa.data.auth.AuthState
+import com.rakshyaa.rakshyaa.data.sync.AppDataSync
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -17,13 +20,24 @@ import kotlinx.coroutines.launch
  */
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val appDataSync: AppDataSync
 ) : ViewModel() {
 
     val authState: StateFlow<AuthState> = authRepository.state
 
     private val _signingOut = MutableStateFlow(false)
     val signingOut: StateFlow<Boolean> = _signingOut.asStateFlow()
+
+    init {
+        // Restore this user's data whenever a session becomes active (fresh login
+        // or restored at app start).
+        viewModelScope.launch {
+            authState.map { it.isLoggedIn }
+                .distinctUntilChanged()
+                .collect { loggedIn -> if (loggedIn) appDataSync.restoreAll() }
+        }
+    }
 
     fun signInWithGoogle() {
         viewModelScope.launch { authRepository.signInWithGoogle() }

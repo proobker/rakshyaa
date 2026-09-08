@@ -79,6 +79,13 @@ class LegalHelpViewModel @Inject constructor(
         }
     }
 
+    fun deleteNote(id: String) {
+        viewModelScope.launch {
+            legalHelpService.deleteNote(id)
+            loadResources()
+        }
+    }
+
     fun getCategories(): List<String> {
         val categories = _uiState.value.allResources.map { it.category }.distinct()
         return listOf("all") + categories.filter { it != "user" } + "user"

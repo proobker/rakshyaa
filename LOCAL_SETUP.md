@@ -71,6 +71,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - Launch **Rakshyaa** on the emulator
 - Tap **Sign in with Google** → choose the Test-user account
 - Backend `POST /auth/google` returns a session JWT → **Home** screen
+- Profile (photo/phone/bio) and feature data are synced/restored over the backend, so keep
+  `npm run dev` running while testing anything beyond onboarding
 
 ## Troubleshooting
 
@@ -81,6 +83,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | `getCredentialAsync no provider dependencies found` | Play Services out of date / no Google account | Use google_apis_playstore AVD; sign in a Google account; update Play Services in the emulator |
 | `Access blocked: not in testers` | Emulator account not a Test user | Add the Google account as a Test user on the OAuth consent screen |
 | Backend `verifyIdToken` fails | `GOOGLE_WEB_CLIENT_ID` mismatch | Ensure **same** Web client ID in `rakshyaa/backend.properties` AND `backend/.env` |
+| Profile/sync data missing after re-login | Backend not running during sign-in | Start backend (`npm run dev`) before launching the app; restore-on-login (`AppDataSync`) pulls blobs + profile on session start |
 
 ## Build Commands
 

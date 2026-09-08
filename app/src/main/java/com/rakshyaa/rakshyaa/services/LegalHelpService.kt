@@ -19,6 +19,10 @@ class LegalHelpService @Inject constructor(
         repo.addNote(title = title, body = body, phone = phone)
     }
 
+    suspend fun deleteNote(id: String) {
+        repo.remove(id)
+    }
+
     suspend fun search(query: String): List<LegalResource> {
         val lower = query.lowercase()
         return repo.getAll().filter {

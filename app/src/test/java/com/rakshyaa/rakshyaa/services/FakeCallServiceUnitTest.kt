@@ -1,123 +1,68 @@
 package com.rakshyaa.rakshyaa.services
 
-import android.app.Notification
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.media.AudioAttributes
-import android.media.MediaPlayer
-import android.net.Uri
-import com.rakshyaa.rakshyaa.data.auth.AuthRepository
-import com.rakshyaa.rakshyaa.data.local.SecurePreferences
-import com.rakshyaa.rakshyaa.data.FakeCallRepository
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runBlockingTest
-import kotlinx.coroutines.test.testCoroutineDispatcher
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.ArgumentCaptor
-import org.mockito.Mock
-import org.mockito.Mockito
-import org.mockito.Mockito.`when`
-import org.mockito.junit.MockitoJUnit
-import org.mockito.junit.MockitoRule
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowApplication
-import org.robolectric.shadows.ShadowNotificationManager
 
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-
-@ExperimentalCoroutinesApi
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class FakeCallServiceUnitTest {
-
-    @get:Rule
-    val mockitoRule = MockitoRule()
-
-    @Mock
-    lateinit var mockAuthRepository: AuthRepository
-
-    @Mock
-    lateinit var mockSecurePreferences: SecurePreferences
-
-    @Mock
-    lateinit var mockFakeCallRepository: FakeCallRepository
 
     private lateinit var fakeCallService: FakeCallService
 
     @Before
     fun setUp() {
-        // Initialize FakeCallService with mocked dependencies
-        fakeCallService = FakeCallService(
-            mockAuthRepository,
-            mockSecurePreferences,
-            mockFakeCallRepository
-        )
-    }
-
-    @After
-    fun tearDown() {
-        Mockito.reset(
-            mockAuthRepository,
-            mockSecurePreferences,
-            mockFakeCallRepository
-        )
+        fakeCallService = FakeCallService(RuntimeEnvironment.getApplication())
     }
 
     @Test
-    fun `serviceShouldBeCreatedWithCorrectDependencies`() {
-        // Assert
-        assertThat(fakeCallService.authRepository).isSameInstanceAs(mockAuthRepository)
-        assertThat(fakeCallService.securePreferences).isSameInstanceAs(mockSecurePreferences)
-        assertThat(fakeCallService.fakeCallRepository).isSameInstanceAs(mockFakeCallRepository)
+    fun `startCall creates an incoming call and exposes it as current`() {
+        val call = fakeCallService.startCall("Mom", "+1-555-0123", isVideo = false)
+
+        assertThat(call.callerName).isEqualTo("Mom")
+        assertThat(call.callerNumber).isEqualTo("+1-555-0123")
+        assertThat(call.connected).isFalse()
+        assertThat(fakeCallService.currentCall()).isSameInstanceAs(call)
     }
 
     @Test
-    fun `startFakeCallShouldLaunchCoroutineAndCallRepository`() = runBlockingTest {
-        // Arrange
-        val testContactName = "John Doe"
-        val testPhoneNumber = "123-456-7890"
+    fun `answerCall marks the ongoing call as connected and stops the ringtone`() {
+        fakeCallService.startCall("Mom", "+1-555-0123")
 
-        // Act
-        fakeCallService.startFakeCall(testContactName, testPhoneNumber)
+        val answered = fakeCallService.answerCall()
 
-        // Assert that the coroutine was launched and repository method was called
-        Mockito.verify(mockFakeCallRepository, Mockito.timeout(1000))
-            .startFakeCall(testContactName, testPhoneNumber)
+        assertThat(answered).isNotNull()
+        assertThat(answered!!.connected).isTrue()
+        assertThat(fakeCallService.currentCall()!!.connected).isTrue()
     }
 
     @Test
-    fun `stopFakeCallShouldLaunchCoroutineAndCallRepository`() = runBlockingTest {
-        // Act
-        fakeCallService.stopFakeCall()
-
-        // Assert that the coroutine was launched and repository method was called
-        Mockito.verify(mockFakeCallRepository, Mockito.timeout(1000))
-            .stopFakeCall()
+    fun `answerCall without an ongoing call returns null`() {
+        assertThat(fakeCallService.answerCall()).isNull()
     }
 
     @Test
-    fun `answerCallShouldLaunchCoroutineAndCallRepository`() = runBlockingTest {
-        // Act
-        fakeCallService.answerCall()
+    fun `endCall clears the current call`() {
+        fakeCallService.startCall("Mom", "+1-555-0123")
 
-        // Assert that the coroutine was launched and repository method was called
-        Mockito.verify(mockFakeCallRepository, Mockito.timeout(1000))
-            .answerCall()
+        val ended = fakeCallService.endCall()
+
+        assertThat(ended).isNotNull()
+        assertThat(fakeCallService.currentCall()).isNull()
     }
 
-    // Note: Testing actual notification creation, media player setup, etc.
-    # would require more complex mocking of Android framework classes.
-    # For now, we're focusing on testing the service's interaction with its repositories
-    # and ensuring that it properly launches coroutines for asynchronous operations.
+    @Test
+    fun `cleanup releases ringtone and current call`() {
+        fakeCallService.startCall("Mom", "+1-555-0123")
+        fakeCallService.startRingtone()
+
+        fakeCallService.cleanup()
+
+        assertThat(fakeCallService.currentCall()).isNull()
+    }
 }

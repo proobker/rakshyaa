@@ -18,9 +18,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Directions
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.LocalHospital
@@ -37,19 +38,15 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
@@ -60,13 +57,18 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rakshyaa.rakshyaa.R
 import com.rakshyaa.rakshyaa.data.models.SafePlace
-import com.rakshyaa.rakshyaa.services.SafePlacesService
 import com.rakshyaa.rakshyaa.viewmodels.SafePlacesViewModel
-import kotlinx.coroutines.launch
+import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.MapEventsOverlay
 
 @Composable
 fun SafePlacesScreen(
@@ -86,6 +88,7 @@ fun SafePlacesScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var placeToDelete by remember { mutableStateOf<SafePlace?>(null) }
     var useCurrentLocation by remember { mutableStateOf(false) }
+    var showMapPicker by remember { mutableStateOf(false) }
 
     val types = listOf(
         "user" to Icons.Default.Favorite,
@@ -93,14 +96,6 @@ fun SafePlacesScreen(
         "police" to Icons.Default.LocalPolice,
         "fire" to Icons.Default.LocalFireDepartment
     )
-
-    // Load nearby places on first load
-    androidx.compose.runtime.LaunchedEffect(key1 = true) {
-        // Request location permission and get current location
-        // For now, we'll use a default location
-        viewModel.loadNearbyPlaces(27.7172, 85.3240)
-        viewModel.loadUserPlaces()
-    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -111,7 +106,7 @@ fun SafePlacesScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
                 actions = {
-                    IconButton(onClick = { viewModel.loadNearbyPlaces(27.7172, 85.3240) }) {
+                    IconButton(onClick = { viewModel.loadWithCurrentLocation() }) {
                         Icon(Icons.Default.MyLocation, contentDescription = stringResource(R.string.use_current_location))
                     }
                 }
@@ -122,7 +117,10 @@ fun SafePlacesScreen(
                 onClick = {
                     dialogName = ""
                     dialogAddress = ""
+                    dialogLatitude = uiState.currentLatitude
+                    dialogLongitude = uiState.currentLongitude
                     dialogType = "user"
+                    useCurrentLocation = true
                     showAddDialog = true
                 },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
@@ -309,7 +307,10 @@ fun SafePlacesScreen(
             types = types,
             useCurrentLocation = useCurrentLocation,
             onUseCurrentLocationChange = { useCurrentLocation = it },
-            onPickLocation = { },
+            onPickLocation = {
+                showAddDialog = false
+                showMapPicker = true
+            },
             onConfirm = {
                 if (dialogName.isNotBlank() && dialogLatitude != 0.0 && dialogLongitude != 0.0) {
                     viewModel.addPlace(dialogName, dialogAddress, dialogLatitude, dialogLongitude, dialogType)
@@ -317,6 +318,24 @@ fun SafePlacesScreen(
                 }
             },
             onDismiss = { showAddDialog = false }
+        )
+    }
+
+    // Map Picker
+    if (showMapPicker) {
+        MapPickerOverlay(
+            initialLatitude = if (dialogLatitude != 0.0) dialogLatitude else uiState.currentLatitude,
+            initialLongitude = if (dialogLongitude != 0.0) dialogLongitude else uiState.currentLongitude,
+            onLocationSelected = { lat, lon ->
+                dialogLatitude = lat
+                dialogLongitude = lon
+                showMapPicker = false
+                showAddDialog = true
+            },
+            onDismiss = {
+                showMapPicker = false
+                showAddDialog = true
+            }
         )
     }
 
@@ -348,6 +367,89 @@ fun SafePlacesScreen(
             }
         )
     }
+}
+
+@Composable
+fun MapPickerOverlay(
+    initialLatitude: Double,
+    initialLongitude: Double,
+    onLocationSelected: (Double, Double) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    var selectedLat by remember { mutableStateOf(initialLatitude) }
+    var selectedLon by remember { mutableStateOf(initialLongitude) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.pick_on_map)) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Tap on the map to select a location",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                AndroidView(
+                    factory = { ctx ->
+                        Configuration.getInstance().userAgentValue = ctx.packageName
+                        MapView(ctx).apply {
+                            setTileSource(TileSourceFactory.MAPNIK)
+                            setMultiTouchControls(true)
+                            setBuiltInZoomControls(false)
+                            controller.setCenter(GeoPoint(initialLatitude, initialLongitude))
+                            controller.setZoom(16.0)
+
+                            val marker = Marker(this)
+                            marker.position = GeoPoint(initialLatitude, initialLongitude)
+                            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                            overlays.add(marker)
+
+                            val mapEvents = object : MapEventsReceiver {
+                                override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                                    p?.let {
+                                        selectedLat = it.latitude
+                                        selectedLon = it.longitude
+                                        overlays.removeAll { o -> o is Marker }
+                                        val newMarker = Marker(this@apply)
+                                        newMarker.position = it
+                                        newMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                        overlays.add(newMarker)
+                                        invalidate()
+                                    }
+                                    return true
+                                }
+                                override fun longPressHelper(p: GeoPoint?): Boolean = false
+                            }
+                            overlays.add(0, MapEventsOverlay(mapEvents))
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
+                Text(
+                    text = "Selected: %.4f, %.4f".format(selectedLat, selectedLon),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onLocationSelected(selectedLat, selectedLon) }) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable

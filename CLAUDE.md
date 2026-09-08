@@ -76,8 +76,22 @@ Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
 | --- | --- |
 | Build debug APK | `./gradlew assembleDebug` |
 | Output | `app/build/outputs/apk/debug/app-debug.apk` |
-| Tests | `./gradlew test` |
+| Tests | `./gradlew test` (40 unit tests — required before declaring work complete) |
 | Lint | `./gradlew lint` |
+| Fast type-check | `./gradlew compileDebugKotlin` |
+
+### Unit tests (rewritten Sep 2026)
+- Stack: **Robolectric** (4.13) + **Mockito inline** (5.x — required to mock Kotlin `final`
+  classes; 4.x cannot) + **Truth** + `kotlinx-coroutines-test` (UnconfinedTestDispatcher + `setMain`).
+- Existing suites: `FakeCallServiceUnitTest`, `AuthViewModelTest`, `LegalHelpServiceUnitTest`,
+  `EmergencyContactsServiceUnitTest`, `LocationRepositoryUnitTest`, `SOSActivationServiceUnitTest`,
+  `SecurePreferencesUnitTest`.
+- **Do not delete tests for a removed feature without replacing them with current-API tests** —
+  the suite must always compile and pass (`./gradlew test`).
+- `SecurePreferences` keeps an `internal constructor(prefs: SharedPreferences)` test seam so
+  Robolectric never touches the Android Keystore ("AndroidKeyStore not found" under Robolectric).
+- `SOSActivationServiceUnitTest`: use `withIntent(...).startCommand(0, 0)` (not `startCommand(intent,0,0)`)
+  and `org.robolectric.Shadows.shadowOf(...)`, not `as ShadowNotificationManager`.
 
 ### Key packages
 - `data/auth/` — Google sign-in (Credential Manager) + backend token exchange.
@@ -86,8 +100,17 @@ Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
   file/datastore helpers.
 - `utils/CryptoManager` — AES-GCM keyed from Android Keystore.
 - `data/repositories/` — per-feature repositories (contacts, rides, check-ins, ...).
+- `data/sync/AppDataSync.kt` — **restore-on-login**: pulls all remote encrypted blobs +
+  profile from the backend when a session starts.
 - `services/` — foreground services (SOS, location, ride monitoring, check-in, fake call).
 - `viewmodels/`, `ui/` — Compose viewmodels, screens, navigation, theme.
+
+### Restore-on-login (applies to auth changes)
+- `AppDataSync.restoreAll()` is **triggered from `AuthViewModel`** (init: collect
+  `isLoggedIn` with `distinctUntilChanged`, call `restoreAll()` on transition to logged-in).
+- **`AuthRepository` must NOT depend on `AppDataSync`** — that creates a Hilt cycle
+  `AuthRepository → AppDataSync → ProfileRepository → AuthRepository`. Any new wiring that
+  needs restore-on-login must go through `AuthViewModel`, not `AuthRepository`.
 
 ### Service architecture (decided)
 - **Manifest-registered services** (4): `@AndroidEntryPoint` + field injection (`@Inject lateinit var`)
@@ -108,6 +131,15 @@ Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
 - **SHA-1 for debug builds**: `0F:2E:8A:D0:82:3D:7D:A5:C8:BF:15:0E:5A:2B:BA:FB:9F:E5:AE:01`.
 - Android OAuth client (type "Android") exists in Cloud Console only for package+SHA-1 mapping.
 - Backend `.env` must contain the **same** `GOOGLE_WEB_CLIENT_ID` (Web client ID).
+
+### Backend profile contracts (user-edited data)
+- `GET /user/profile` and `PUT /user/profile` (`{ name?, phone?, bio?, picture? }`) are
+  auth-protected routes in `backend/src/routes/user.ts`.
+- The `users` table has `phone` and `bio` columns (auto-migrated); `users.picture` is the
+  profile photo ref. **Google (re)sign-in never overwrites `phone`/`bio`** — user-edited
+  data survives logout/login.
+- Picture refs are `media:<id>` (encrypted upload); Coil loads them via an image loader that
+  handles the `media:` scheme.
 
 ### Network security
 - Dev builds allow cleartext `http://10.0.2.2` and `http://localhost` via
