@@ -1,6 +1,7 @@
 package com.rakshyaa.rakshyaa.data.repositories
 
 import com.rakshyaa.rakshyaa.data.local.EncryptedLocalStore
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -14,6 +15,7 @@ import org.mockito.Mockito.verify
 class LocationRepositoryUnitTest {
 
     private val store = mock(EncryptedLocalStore::class.java)
+    private val fusedLocationClient = mock(FusedLocationProviderClient::class.java)
     private val stored = mutableMapOf<String, String?>()
     private lateinit var repository: LocationRepository
 
@@ -28,7 +30,7 @@ class LocationRepositoryUnitTest {
             stored[inv.getArgument<String>(0)] = inv.getArgument<String>(1)
             null
         }.`when`(store).savePlain(anyString(), anyString())
-        repository = LocationRepository(store)
+        repository = LocationRepository(store, fusedLocationClient)
     }
 
     @Test

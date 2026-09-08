@@ -14,7 +14,18 @@ class SafePlacesService @Inject constructor(
         latitude: Double,
         longitude: Double,
         radiusM: Double = 5000.0
-    ): List<SafePlace> = repo.nearby(
+    ): SafePlacesRepository.NearbyPlacesResult = repo.nearby(
+        latitude = latitude,
+        longitude = longitude,
+        radiusM = radiusM
+    )
+
+    /** Offline-only listing for when the user's location cannot be determined. */
+    suspend fun offlineFallback(
+        latitude: Double,
+        longitude: Double,
+        radiusM: Double = 5000.0
+    ): SafePlacesRepository.NearbyPlacesResult = repo.offlineFallback(
         latitude = latitude,
         longitude = longitude,
         radiusM = radiusM

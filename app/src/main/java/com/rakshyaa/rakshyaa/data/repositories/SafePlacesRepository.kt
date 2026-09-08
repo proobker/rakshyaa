@@ -67,9 +67,29 @@ class SafePlacesRepository @Inject constructor(
             .map { it.distanceFrom(latitude, longitude) }
             .sortedBy { it.distanceMeters }
         val nearby = all.filter { it.distanceMeters <= radiusM.toLong() }
+        val closest = if (nearby.isEmpty()) all.firstOrNull() else null
         return NearbyPlacesResult(
             nearby = nearby,
-            closest = if (nearby.isEmpty()) all.firstOrNull() else null,
+            closest = closest,
+            isLive = false
+        )
+    }
+
+    /**
+     * Same [nearby] cut/closest logic but never touches the network: uses the
+     * hardcoded fallback set plus the user's saved places. Used when the user's
+     * location is unavailable (permission off), so the screen still shows a generic
+     * list instead of a blank state.
+     */
+    suspend fun offlineFallback(latitude: Double, longitude: Double, radiusM: Double): NearbyPlacesResult {
+        val all = (DEFAULT_PLACES + loadAll())
+            .map { it.distanceFrom(latitude, longitude) }
+            .sortedBy { it.distanceMeters }
+        val nearby = all.filter { it.distanceMeters <= radiusM.toLong() }
+        val closest = if (nearby.isEmpty()) all.firstOrNull() else null
+        return NearbyPlacesResult(
+            nearby = nearby,
+            closest = closest,
             isLive = false
         )
     }

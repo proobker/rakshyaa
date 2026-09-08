@@ -32,8 +32,10 @@ backend as **opaque encrypted blobs** — the server never sees plaintext.
   - GPS logging with route deviation detection (Haversine formula)
   - Alerts when leaving safe zones
 - **Safe Places Discovery**:
-  - Nearby hospitals / police / fire stations
-  - User-submitted safe places
+  - Live nearby hospitals / clinics / police / fire stations from OpenStreetMap (backend
+    proxies Overpass), sorted by distance with an adjustable search radius (1–20 km)
+  - "Closest match" card when nothing is within the radius
+  - Offline fallback + user-submitted safe places
 - **Check-ins System**:
   - Scheduled safety check-ins with grace periods
   - Foreground service with `specialUse` type (Android 14-safe)
@@ -157,7 +159,7 @@ deleted/replaced):
 
 ```bash
 cd rakshyaa
-./gradlew test          # 40 unit tests — Robolectric + Mockito (inline) + Truth + coroutines-test
+./gradlew test          # 47 unit tests — Robolectric + Mockito (inline) + Truth + coroutines-test
 ```
 
 Coverage highlights: `FakeCallService` phase machine, `AuthViewModel` (login restore trigger),

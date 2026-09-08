@@ -84,7 +84,7 @@ This document summarizes the complete rewrite of the Rakshyaa Android app and ba
 - All 9 services compile, register in manifest
 - All repositories compile with real APIs
 - APK builds: `app/build/outputs/apk/debug/app-debug.apk`
-- Unit suite: `./gradlew test` green (40 tests, debug + release)
+- Unit suite: `./gradlew test` green (47 tests, debug + release)
 
 **All feature screens restored & wired to real services/repositories**:
 
