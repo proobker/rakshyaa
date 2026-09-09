@@ -22,8 +22,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
@@ -96,9 +94,11 @@ fun LocationTrackingScreen(
 
     val scrollState = rememberScrollState()
     val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
-    val mapExpanded by remember { derivedStateOf { scrollState.value > 100 } }
+    val mapExpanded by remember { derivedStateOf { scrollState.value < 32 } }
     val mapHeight by animateDpAsState(
-        targetValue = if (mapExpanded) screenHeightDp else 200.dp
+        targetValue = if (mapExpanded) (screenHeightDp * 0.7f) else (screenHeightDp * 0.35f),
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 250),
+        label = "mapHeight"
     )
 
     Column(
@@ -205,64 +205,72 @@ fun LocationTrackingScreen(
             }
         }
 
-        // Current Location Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            )
+        // Location Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 4.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Column {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+            Column {
+                Text(
+                    text = stringResource(R.string.last_location),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                uiState.lastLocation?.let { loc ->
+                    if (uiState.placeName.isNotBlank()) {
                         Text(
-                            text = stringResource(R.string.last_location),
-                            style = MaterialTheme.typography.titleMedium,
+                            text = uiState.placeName,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        uiState.lastLocation?.let { loc ->
-                            Text(
-                                text = "Lat: ${loc.latitude}, Lon: ${loc.longitude}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = stringResource(R.string.accuracy, loc.accuracy),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
-                        } ?: Text(
-                            text = stringResource(R.string.no_location_yet),
+                        Text(
+                            text = "Lat: ${loc.latitude}, Lon: ${loc.longitude}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = stringResource(R.string.accuracy, loc.accuracy),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    } else {
+                        Text(
+                            text = "Lat: ${loc.latitude}, Lon: ${loc.longitude}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Text(
+                            text = stringResource(R.string.accuracy, loc.accuracy),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
                     }
-                }
-
-                // Map Preview
-                if (uiState.lastLocation != null) {
-                    MapPreview(
-                        latitude = uiState.lastLocation!!.latitude,
-                        longitude = uiState.lastLocation!!.longitude,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(mapHeight)
-                    )
-                }
+                } ?: Text(
+                    text = stringResource(R.string.no_location_yet),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+        }
+
+        // Map Preview
+        if (uiState.lastLocation != null) {
+            MapPreview(
+                latitude = uiState.lastLocation!!.latitude,
+                longitude = uiState.lastLocation!!.longitude,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(mapHeight)
+            )
         }
 
         // Primary Toggle Button (SOS-style)
@@ -275,32 +283,16 @@ fun LocationTrackingScreen(
 
         // History Section
         if (uiState.locationHistory.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.location_history),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(uiState.locationHistory.take(20).reversed()) { record ->
-                            LocationHistoryItem(record = record)
-                        }
-                    }
-                }
+            Text(
+                text = stringResource(R.string.location_history),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            )
+            uiState.locationHistory.take(20).reversed().forEach { record ->
+                LocationHistoryItem(record = record)
             }
         }
 
@@ -379,11 +371,25 @@ fun LocationHistoryItem(record: LocationRecord) {
                 modifier = Modifier.size(24.dp)
             )
             Column {
-                Text(
-                    text = "Lat: ${record.latitude}, Lon: ${record.longitude}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurface
-                )
+                if (record.placeName.isNotBlank()) {
+                    Text(
+                        text = record.placeName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                        color = colors.onSurface
+                    )
+                    Text(
+                        text = "Lat: ${record.latitude}, Lon: ${record.longitude}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        text = "Lat: ${record.latitude}, Lon: ${record.longitude}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurface
+                    )
+                }
                 Text(
                     text = "$timestamp  •  Accuracy: ${record.accuracy.toInt()}m${if (record.isSos) "  •  SOS" else ""}",
                     style = MaterialTheme.typography.bodySmall,

@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rakshyaa.rakshyaa.data.models.LocationRecord
 import com.rakshyaa.rakshyaa.data.repositories.LocationRepository
+import com.rakshyaa.rakshyaa.services.GeocodingService
 import com.rakshyaa.rakshyaa.services.LocationTrackingService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,50 +26,59 @@ import javax.inject.Inject
 @HiltViewModel
 class LocationTrackingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val locationRepository: LocationRepository
+    private val locationRepository: LocationRepository,
+    private val geocodingService: GeocodingService
 ) : ViewModel() {
 
-    data class UiState(
-        val isTracking: Boolean = false,
-        val lastLocation: LocationRecord? = null,
-        val locationHistory: List<LocationRecord> = emptyList(),
-        val hasFineLocationPermission: Boolean = false,
-        val hasBackgroundLocationPermission: Boolean = false,
-        val isLoading: Boolean = false,
-        val error: String? = null
-    )
+        data class UiState(
+            val placeName: String = "",
+            val isTracking: Boolean = false,
+            val lastLocation: LocationRecord? = null,
+            val locationHistory: List<LocationRecord> = emptyList(),
+            val hasFineLocationPermission: Boolean = false,
+            val hasBackgroundLocationPermission: Boolean = false,
+            val isLoading: Boolean = false,
+            val error: String? = null
+        )
 
-    private val _uiState = MutableStateFlow(UiState())
-    val uiState: StateFlow<UiState> = _uiState
+        private val _uiState = MutableStateFlow(UiState())
+        val uiState: StateFlow<UiState> = _uiState
 
-    init {
-        refreshState()
-    }
-
-    fun refreshState() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            val fine = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-            val bg = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
-            } else true
-            val last = locationRepository.getLastKnownLocation()
-            val history = locationRepository.getLocationHistory()
-            _uiState.value = _uiState.value.copy(
-                hasFineLocationPermission = fine,
-                hasBackgroundLocationPermission = bg,
-                lastLocation = last,
-                locationHistory = history,
-                isLoading = false
-            )
+        init {
+            refreshState()
         }
-    }
+
+        fun refreshState() {
+            viewModelScope.launch {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                val fine = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+                val bg = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                } else true
+                val last = locationRepository.getLastKnownLocation()
+                val history = locationRepository.getLocationHistory()
+                val resolved = history.map { record ->
+                    if (record.placeName.isNotBlank()) record
+                    else record.copy(placeName = geocodingService.reverseGeocode(record.latitude, record.longitude).orEmpty())
+                }
+                _uiState.value = _uiState.value.copy(
+                    hasFineLocationPermission = fine,
+                    hasBackgroundLocationPermission = bg,
+                    lastLocation = last,
+                    locationHistory = resolved,
+                    placeName = last?.placeName
+                        ?.takeIf { it.isNotBlank() }
+                        ?: geocodingService.reverseGeocode(last?.latitude ?: 0.0, last?.longitude ?: 0.0).orEmpty(),
+                    isLoading = false
+                )
+            }
+        }
 
     /** Launches the FINE + COARSE permission request (step 1 of the two-step flow). */
     fun requestFineLocation(launcher: androidx.activity.result.ActivityResultLauncher<Array<String>>) {

@@ -84,7 +84,8 @@ data class LocationRecord(
     val longitude: Double,
     val accuracy: Float = 0f,
     val timestamp: Long = System.currentTimeMillis(),
-    val isSos: Boolean = false
+    val isSos: Boolean = false,
+    val placeName: String = ""
 )
 
 @Serializable
