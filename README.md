@@ -143,7 +143,7 @@ the console to map package+SHA-1; its client ID is **not** used in code.
 2. Set `BACKEND_BASE_URL=http://10.0.2.2:8080` and the Web client ID in
    `rakshyaa/backend.properties`.
 3. Set the same Web client ID + `JWT_SECRET` in `backend/.env`.
-3. Build & install: `cd rakshyaa && ./gradlew assembleDebug && adb install -r app-debug.apk`.
+4. Build & install: `cd rakshyaa && ./gradlew assembleDebug && adb install -r app-debug.apk`.
 4. On the emulator (`Medium_Phone_API_36.1`, google_apis_playstore), sign in the same Google
    account added as a Test user on the OAuth consent screen.
 5. Launch the app → **Sign in with Google** → pick the Test-user account → backend returns a
