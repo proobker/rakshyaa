@@ -52,7 +52,7 @@ backend as **opaque encrypted blobs** — the server never sees plaintext.
 ```
 rakshyaa/     # Native Android app (Kotlin, Jetpack Compose, Hilt)
 backend/      # Own Node.js + TypeScript + Express + SQLite backend
-admin/        # Existing Next.js admin portal (reads backend via API key)
+admin/        # Next.js admin portal (reads backend incidents via API key)
 ```
 
 ## Backend
@@ -125,8 +125,9 @@ the console to map package+SHA-1; its client ID is **not** used in code.
    monitoring/check-ins, CameraX video capture, encrypted local storage via Android Keystore,
    and encrypted-blob backup + **restore-on-login** (`data/sync/AppDataSync.kt`) to the backend.
 2. **Backend (self-hosted)** — verifies Google ID tokens, issues session JWTs, serves profile
-   (`GET/PUT /user/profile`) and stores opaque encrypted backup blobs (SQLite metadata + disk
-   files). It never holds or reads plaintext.
+   (`GET/PUT /user/profile`), stores opaque encrypted backup blobs (SQLite metadata + disk
+   files), proxies Overpass/OpenStreetMap for nearby safe places (`GET /places/nearby`).
+   It never holds or reads plaintext.
 3. **Admin portal** — web interface that reads backend incident data via an API key.
 
 ## Security Model
