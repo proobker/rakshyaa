@@ -20,7 +20,7 @@ class, they are stale and should be removed.
 ```
 rakshyaa/     # Native Android app (Kotlin, Jetpack Compose, Hilt)
 backend/      # Node.js + TypeScript + Express + SQLite (own backend)
-admin/        # Existing Next.js admin portal (out of scope for APK; reads via API key)
+admin/        # Next.js admin portal (reads backend incidents via API key)
 ```
 
 ## Backend (Node.js + TypeScript + Express)
@@ -54,17 +54,20 @@ Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
 - `GET /health`
 - `POST /auth/google` — body `{ idToken }` → `{ token, user }`
 - Auth-protected (`Authorization: Bearer <jwt>`):
-  - `GET /backup/me`
+  - `GET /user/profile` — current user's profile
+  - `PUT /user/profile` — update profile (`{ name?, phone?, bio?, picture? }`)
+  - `GET /backup/me` — current user's profile + blob metadata
   - `GET /backup` — list encrypted blob metadata
   - `PUT /backup/data/:key`, `GET /backup/data/:key`, `DELETE /backup/data/:key`
   - `PUT /backup/media/:id`, `GET /backup/media/:id`
   - `POST /incidents`, `POST /incidents/:id/resolve`
+  - `GET /places/nearby` — proxy Overpass/OpenStreetMap for nearby safe places
 - API-key protected (`x-api-key: <ADMIN_API_KEY>`):
   - `GET /incidents/admin/active`
 
 ## Android App (`rakshyaa/`)
 
-- Kotlin 2.0.20, AGP 8.5.2, Jetpack Compose (BOM 2024.09.00), Hilt 2.52.
+- Kotlin 2.0.20, AGP 8.5.2, Jetpack Compose (BOM 2024.08.00), Hilt 2.52.
 - `compileSdk` 34, `minSdk` 24.
 - `android.nonTransitiveRClass=true` → resource references must be fully-qualified
   (`com.rakshyaa.rakshyaa.R.string.x`) or explicitly imported. Do not write `R.xxx`.
@@ -115,8 +118,8 @@ Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
 ### Service architecture (decided)
 - **Manifest-registered services** (4): `@AndroidEntryPoint` + field injection (`@Inject lateinit var`)
   — SOSActivationService, LocationTrackingService, RideMonitoringService, CheckInService.
-- **Helper services** (5): plain `@Singleton` with constructor injection via `javax.inject.*`
-  — VideoEncryptionService, EmergencyContactsService, FakeCallService, LegalHelpService, SafePlacesService.
+- **Helper services** (6): plain `@Singleton` with constructor injection via `javax.inject.*`
+  — VideoEncryptionService, EmergencyContactsService, FakeCallService, LegalHelpService, SafePlacesService, GeocodingService.
 - Do NOT add new manifest services without the `@AndroidEntryPoint` pattern.
 - Do NOT use `hiltService` or `SupabaseProvider` — both are stale.
 

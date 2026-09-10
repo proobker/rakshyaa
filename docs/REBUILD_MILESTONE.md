@@ -11,7 +11,7 @@ This document summarizes the complete rewrite of the Rakshyaa Android app and ba
 | Area | Changes |
 |------|---------|
 | **Auth** | Google sign-in via Credential Manager (`GetGoogleIdOption` + web client ID). `AuthViewModel`, `GoogleAuthClient`, `AuthRepository` all rewritten. LoginScreen + HomeScreen working. |
-| **Services (9 total)** | 4 manifest `@AndroidEntryPoint` foreground services (SOS, Location, Ride, CheckIn) + 5 helper `@Singleton` (VideoEncryption, EmergencyContacts, FakeCall, LegalHelp, SafePlaces). All wired to real repositories. |
+| **Services (10 total)** | 4 manifest `@AndroidEntryPoint` foreground services (SOS, Location, Ride, CheckIn) + 6 helper `@Singleton` (VideoEncryption, EmergencyContacts, FakeCall, LegalHelp, SafePlaces, Geocoding). All wired to real repositories. |
 | **Repositories** | LocationRepository (encrypted local log), VideoRepository (AES-256-GCM + SyncManager), plus contacts, rides, check-ins, incidents, legal, safe places — all using real APIs. |
 | **Models** | `LocationRecord`, `VideoRecord` added. |
 | **UI** | `LoginScreen` (Google-only), `HomeScreen` (dashboard; sign-out now on Profile), `MainActivity` (switches Login/Home on auth state). Removed broken: `SignupScreen`, `ProfileSetupScreen`, `SOSScreen`, `LocationPermissionsHelper`, `VideoCaptureUtil`. All feature screens restored afterward (SOS, tracking, rides, check-ins, contacts, video, safe places, legal, fake call, profile). |
@@ -25,7 +25,7 @@ This document summarizes the complete rewrite of the Rakshyaa Android app and ba
 | **Framework** | Express 4 + TypeScript (NodeNext), `node:sqlite` (`DatabaseSync`), no `better-sqlite3`. |
 | **Auth** | `google-auth-library` verifies Google ID token (audience = Web client ID); issues session JWT (`jsonwebtoken`). |
 | **Endpoints** | `GET /health`, `POST /auth/google`, auth-protected backup/media/incidents, API-key `/incidents/admin/active`. |
-| **Storage** | SQLite tables: `users`, `blobs`, `media`, `incidents`. Files on disk under `backend/data/media/<userId>/`. |
+| **Storage** | SQLite tables: `users`, `blobs` (encrypted-blob metadata), `incidents`. Files on disk under `backend/data/media/<userId>/`. |
 | **Security** | Server never decrypts blobs; only verifies ID tokens and issues JWTs. |
 
 ---
@@ -49,7 +49,7 @@ This document summarizes the complete rewrite of the Rakshyaa Android app and ba
 | Type | Services | DI Pattern |
 |------|----------|------------|
 | **Manifest-registered** (4) | SOSActivationService, LocationTrackingService, RideMonitoringService, CheckInService | `@AndroidEntryPoint` + `@Inject lateinit var` field injection |
-| **Helper** (5) | VideoEncryptionService, EmergencyContactsService, FakeCallService, LegalHelpService, SafePlacesService | Plain `@Singleton` + `javax.inject` constructor injection |
+| **Helper** (6) | VideoEncryptionService, EmergencyContactsService, FakeCallService, LegalHelpService, SafePlacesService, GeocodingService | Plain `@Singleton` + `javax.inject` constructor injection |
 
 **Rule**: Do NOT add new manifest services without `@AndroidEntryPoint` + field injection. Do NOT use `hiltService` or `SupabaseProvider` (stale).
 

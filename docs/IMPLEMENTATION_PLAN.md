@@ -154,8 +154,8 @@ All placeholder screens accept `onNavigate` callback for future sub-navigation:
 ### Service Architecture (Per AGENTS.md)
 - **Manifest Services** (4): `@AndroidEntryPoint` + `@Inject lateinit var`
   - `SOSActivationService`, `LocationTrackingService`, `RideMonitoringService`, `CheckInService`
-- **Helper Services** (5): `@Singleton` + constructor injection
-  - `VideoEncryptionService`, `EmergencyContactsService`, `FakeCallService`, `LegalHelpService`, `SafePlacesService`
+- **Helper Services** (6): `@Singleton` + constructor injection
+  - `VideoEncryptionService`, `EmergencyContactsService`, `FakeCallService`, `LegalHelpService`, `SafePlacesService`, `GeocodingService`
 
 ### Key Constraints
 - `android.nonTransitiveRClass=true` → Use `com.rakshyaa.rakshyaa.R.*` fully qualified
