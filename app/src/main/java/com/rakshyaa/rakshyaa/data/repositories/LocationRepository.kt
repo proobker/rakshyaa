@@ -62,10 +62,15 @@ class LocationRepository @Inject constructor(
         val fresh = runCatching {
             withTimeoutOrNull(8_000) {
                 suspendCancellableCoroutine<Location?> { cont ->
-                    val task = fusedLocationClient.getCurrentLocation(
-                        Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-                        null
-                    )
+                    val task = try {
+                        fusedLocationClient.getCurrentLocation(
+                            Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                            null
+                        )
+                    } catch (_: SecurityException) {
+                        cont.resume(null)
+                        return@suspendCancellableCoroutine
+                    }
                     task.addOnSuccessListener { location ->
                         if (cont.isActive) cont.resume(location)
                     }

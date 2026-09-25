@@ -72,21 +72,13 @@ fun MoreScreenContent(
                     icon = Icons.Default.Phone,
                     title = stringResource(R.string.help_and_support),
                     subtitle = stringResource(R.string.help_and_support_desc),
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:support@rakshyaa.com")
-                        }
-                        context.startActivity(intent)
-                    }
+                    onClick = { onNavigate("profile") }
                 )
                 MoreMenuItem(
                     icon = Icons.Default.Info,
                     title = stringResource(R.string.about_rakshyaa),
                     subtitle = stringResource(R.string.about_rakshyaa_desc),
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rakshyaapp.github.io/about"))
-                        context.startActivity(intent)
-                    }
+                    onClick = { onNavigate("profile") }
                 )
             }
         }

@@ -21,6 +21,7 @@ import kotlinx.serialization.json.Json
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val accountDeletion: com.rakshyaa.rakshyaa.data.auth.AccountDeletion,
     private val syncManager: com.rakshyaa.rakshyaa.data.sync.SyncManager,
     private val store: EncryptedLocalStore,
     private val profileRepository: ProfileRepository
@@ -61,6 +62,9 @@ class ProfileViewModel @Inject constructor(
         loadProfile()
         loadSettings()
         refreshFromRemote()
+        viewModelScope.launch {
+            syncManager.error.collect { message -> if (message != null) _uiState.value = _uiState.value.copy(error = message) }
+        }
     }
 
     fun loadProfile() {
@@ -110,7 +114,7 @@ class ProfileViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             notificationsEnabled = settings.notificationsEnabled,
             locationSharingEnabled = settings.locationSharingEnabled,
-            backupEnabled = settings.backupEnabled
+            backupEnabled = settings.backupEnabled && authRepository.state.value.user?.sub != AuthRepository.LOCAL_USER
         )
     }
 
@@ -125,14 +129,17 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun syncNow() {
+        if (_uiState.value.isSyncing) return
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isSyncing = true)
-            syncManager.remoteKeys()
-            refreshFromRemote()
-            _uiState.value = _uiState.value.copy(
-                isSyncing = false,
-                lastSyncTime = System.currentTimeMillis()
-            )
+            _uiState.value = _uiState.value.copy(isSyncing = true, error = null)
+            try {
+                syncManager.syncAll()
+                _uiState.value = _uiState.value.copy(lastSyncTime = System.currentTimeMillis())
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message ?: "Backup failed. Please retry.")
+            } finally {
+                _uiState.value = _uiState.value.copy(isSyncing = false)
+            }
         }
     }
 
@@ -147,8 +154,26 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun toggleBackup(enabled: Boolean) {
+        if (enabled && authRepository.state.value.user?.sub == AuthRepository.LOCAL_USER) {
+            _uiState.value = _uiState.value.copy(error = "Cloud backup requires Google sign-in and a configured backend.")
+            return
+        }
         _uiState.value = _uiState.value.copy(backupEnabled = enabled)
         saveSettings()
+    }
+
+    fun deleteAccount() {
+        if (_uiState.value.isSaving) return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSaving = true, error = null)
+            try {
+                accountDeletion.delete()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message ?: "Account deletion failed. Please retry.")
+            } finally {
+                _uiState.value = _uiState.value.copy(isSaving = false)
+            }
+        }
     }
 
     fun signOut() {
@@ -182,7 +207,8 @@ class ProfileViewModel @Inject constructor(
     fun changePicture(uri: Uri) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, pictureLoading = true)
-            profileRepository.uploadAndApplyPicture(uri)
+            val updated = profileRepository.uploadAndApplyPicture(uri)
+            if (updated == null) _uiState.value = _uiState.value.copy(error = "Photo upload failed. Cloud photos require a configured backend and cloud backup.")
             loadPicture()
             _uiState.value = _uiState.value.copy(isSaving = false, pictureLoading = false)
         }

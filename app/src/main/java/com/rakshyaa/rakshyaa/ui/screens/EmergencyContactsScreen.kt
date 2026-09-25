@@ -107,8 +107,9 @@ fun EmergencyContactsScreen(
             )
             cursor?.use { c ->
                 if (c.moveToFirst()) {
-                    val phone = c.getString(c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
-                    dialogPhone = phone.replace("\\D".toRegex(), "")
+                    val phoneIndex = c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                    val phone = if (phoneIndex >= 0) c.getString(phoneIndex) else null
+                    dialogPhone = phone.orEmpty().replace("\\D".toRegex(), "")
                 }
             }
         }

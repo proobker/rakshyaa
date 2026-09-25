@@ -26,6 +26,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,9 +54,20 @@ import com.rakshyaa.rakshyaa.viewmodels.SOSViewModel
 @Composable
 fun SOSScreen(
     viewModel: SOSViewModel = hiltViewModel(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    actions: com.rakshyaa.rakshyaa.viewmodels.EmergencyActionsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var preparingMessage by remember { mutableStateOf(false) }
+    var actionError by remember { mutableStateOf<String?>(null) }
+    val locationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        if (grants[android.Manifest.permission.ACCESS_FINE_LOCATION] == true) viewModel.activateSos()
+        else actionError = context.getString(R.string.sos_permission_denied)
+    }
     
     var showDeactivateDialog by remember { mutableStateOf(false) }
     
@@ -129,15 +145,50 @@ fun SOSScreen(
 
         SOSButton(
             viewModel = viewModel,
-            onActivateClick = { viewModel.activateSos() },
+            onActivateClick = {
+                if (androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, android.Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED) viewModel.activateSos()
+                else locationPermission.launch(arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                ))
+            },
             onDeactivateClick = { showDeactivateDialog = true }
         )
 
-        Spacer(modifier = Modifier.height(48.dp))
-
-        Row(
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            enabled = !preparingMessage,
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            onClick = {
+                preparingMessage = true
+                actionError = null
+                coroutineScope.launch {
+                    try { context.startActivity(actions.message()) }
+                    catch (_: Exception) { actionError = context.getString(R.string.sms_app_unavailable) }
+                    finally { preparingMessage = false }
+                }
+            }
+        ) {
+            Text(stringResource(if (preparingMessage) R.string.preparing_message else R.string.message_contacts))
+        }
+        androidx.compose.material3.OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                runCatching { context.startActivity(com.rakshyaa.rakshyaa.ui.components.emergencyDialIntent()) }
+                    .onFailure { actionError = context.getString(R.string.dialer_unavailable) }
+            }
+        ) { Text(stringResource(R.string.open_emergency_dialer)) }
+        Text(stringResource(R.string.sms_confirmation_notice), style = MaterialTheme.typography.bodySmall)
+        (actionError ?: uiState.error)?.let {
+            Text(it, color = colors.error, modifier = Modifier.padding(vertical = 8.dp))
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             InfoCard(
                 title = stringResource(R.string.emergency_called),
@@ -145,7 +196,7 @@ fun SOSScreen(
                 icon = Icons.Default.Shield,
                 isActive = uiState.isSosActive,
                 color = errorColor,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth()
             )
             InfoCard(
                 title = stringResource(R.string.location_sharing),
@@ -153,7 +204,7 @@ fun SOSScreen(
                 icon = Icons.Default.Info,
                 isActive = uiState.isSosActive,
                 color = primaryColor,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth()
             )
             InfoCard(
                 title = stringResource(R.string.admin_notified),
@@ -161,7 +212,7 @@ fun SOSScreen(
                 icon = Icons.Default.Info,
                 isActive = uiState.isSosActive,
                 color = colors.tertiary,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
@@ -306,9 +357,6 @@ private fun InfoCard(
                     style = MaterialTheme.typography.labelLarge,
                     color = if (isActive) color else onSurface,
                     fontWeight = FontWeight.Medium,
-                    softWrap = false,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
             }
@@ -318,8 +366,6 @@ private fun InfoCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isActive) color.copy(alpha = 0.8f) else onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
             )
         }
     }

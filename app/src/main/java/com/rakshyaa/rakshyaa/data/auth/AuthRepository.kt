@@ -27,7 +27,8 @@ data class AuthState(
 class AuthRepository @Inject constructor(
     private val googleAuthClient: GoogleAuthClient,
     private val apiClient: ApiClient,
-    private val securePreferences: SecurePreferences
+    private val securePreferences: SecurePreferences,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     private val _state = MutableStateFlow(AuthState())
@@ -41,10 +42,21 @@ class AuthRepository @Inject constructor(
     private fun restoreSession() {
         val loggedIn = securePreferences.isLoggedIn()
         val token = securePreferences.getAccessToken()
-        if (loggedIn && !token.isNullOrEmpty()) {
+        if (loggedIn && securePreferences.getUserId() == LOCAL_USER) {
+            _state.value = AuthState(isLoggedIn = true, user = UserDto(sub = LOCAL_USER, name = "On this device"))
+        } else if (loggedIn && !token.isNullOrEmpty()) {
             _state.value = AuthState(isLoggedIn = true)
         }
     }
+
+    fun continueOnDevice() {
+        securePreferences.clear()
+        securePreferences.saveUserId(LOCAL_USER)
+        securePreferences.saveLoginState(true)
+        _state.value = AuthState(isLoggedIn = true, user = UserDto(sub = LOCAL_USER, name = "On this device"))
+    }
+
+    companion object { const val LOCAL_USER = "local-device" }
 
     suspend fun signInWithGoogle() {
         if (_state.value.inProgress) return
@@ -70,7 +82,7 @@ class AuthRepository @Inject constructor(
 
     suspend fun fetchMe() {
         val current = _state.value
-        if (!current.isLoggedIn) return
+        if (!current.isLoggedIn || securePreferences.getUserId() == LOCAL_USER) return
         try {
             val body = apiClient.get("/backup/me")
             val me = json.decodeFromString<com.rakshyaa.rakshyaa.data.network.MeResponse>(body)
@@ -81,6 +93,12 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun signOut() {
+        listOf(
+            com.rakshyaa.rakshyaa.services.SOSActivationService::class.java,
+            com.rakshyaa.rakshyaa.services.LocationTrackingService::class.java,
+            com.rakshyaa.rakshyaa.services.RideMonitoringService::class.java,
+            com.rakshyaa.rakshyaa.services.CheckInService::class.java
+        ).forEach { context.stopService(android.content.Intent(context, it)) }
         securePreferences.clear()
         _state.value = AuthState()
     }

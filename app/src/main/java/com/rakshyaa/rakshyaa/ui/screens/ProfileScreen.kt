@@ -76,6 +76,8 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    var information by remember { mutableStateOf<Int?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var showSignOutDialog by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(uiState.userName ?: "") }
     var editPhone by remember { mutableStateOf(uiState.userPhone ?: "") }
@@ -271,7 +273,7 @@ fun ProfileScreen(
                         }
                         ChipItem(
                             icon = Icons.Default.Verified,
-                            label = stringResource(R.string.verified),
+                            label = stringResource(if (uiState.userEmail == null) R.string.on_device else R.string.verified),
                             color = MaterialTheme.colorScheme.primary
                         )
                         ChipItem(
@@ -381,24 +383,35 @@ fun ProfileScreen(
                         title = stringResource(R.string.privacy_policy),
                         subtitle = stringResource(R.string.privacy_policy_desc),
                         trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        onClick = { browse(context, "https://rakshyaapp.github.io/privacy") }
+                        onClick = { information = R.string.privacy_information }
                     ),
                     SettingItem(
                         icon = Icons.Default.Verified,
                         title = stringResource(R.string.terms_of_service),
                         subtitle = stringResource(R.string.terms_of_service_desc),
                         trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        onClick = { browse(context, "https://rakshyaapp.github.io/terms") }
+                        onClick = { information = R.string.terms_information }
                     ),
                     SettingItem(
                         icon = Icons.Default.Person,
                         title = stringResource(R.string.help_support),
                         subtitle = stringResource(R.string.help_support_desc),
                         trailing = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        onClick = { browse(context, "https://rakshyaapp.github.io/support") }
+                        onClick = { information = R.string.support_information }
                     )
                 )
             )
+
+            Text(
+                stringResource(R.string.backup_device_notice),
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            androidx.compose.material3.OutlinedButton(
+                onClick = { showDeleteDialog = true },
+                enabled = !uiState.isSaving,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            ) { Text(stringResource(R.string.delete_account)) }
 
             // Sign Out Button
             Card(
@@ -460,6 +473,30 @@ fun ProfileScreen(
                 }
             }
         }
+    }
+
+    information?.let { resource ->
+        AlertDialog(
+            onDismissRequest = { information = null },
+            title = { Text(stringResource(R.string.about_rakshyaa)) },
+            text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text(stringResource(resource)) } },
+            confirmButton = { Button(onClick = { information = null }) { Text(stringResource(R.string.close)) } }
+        )
+    }
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.delete_account)) },
+            text = { Text(stringResource(R.string.delete_account_explanation)) },
+            confirmButton = {
+                Button(onClick = { showDeleteDialog = false; viewModel.deleteAccount() }) {
+                    Text(stringResource(R.string.delete_account_confirm))
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
     }
 
     // Sign Out Confirmation Dialog

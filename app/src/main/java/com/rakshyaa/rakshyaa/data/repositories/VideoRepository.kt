@@ -37,8 +37,9 @@ class VideoRepository @Inject constructor(
         val fileName = "${userId}_${videoType}_${System.currentTimeMillis()}.enc"
 
         val encryptedBytes = encryptedFile.readBytes()
-        sync.pushMedia(id, encryptedBytes)
+        File(storeFileDirFor(id), "$id.enc").writeBytes(encryptedBytes)
         encryptedFile.delete()
+        if (store.accountId != "local-device") runCatching { sync.pushMedia(id, encryptedBytes) }
 
         val record = VideoRecord(
             id = id,
@@ -61,14 +62,17 @@ class VideoRepository @Inject constructor(
     /** Downloads and decrypts a previously backed-up video into a cache file. */
     suspend fun downloadAndDecrypt(videoId: String): File? {
         val record = getVideoById(videoId) ?: return null
-        val encryptedBytes = sync.pullMedia(videoId) ?: return null
         val encFile = File(storeFileDirFor(videoId), "$videoId.enc")
-        encFile.writeBytes(encryptedBytes)
+        if (!encFile.exists()) {
+            val encryptedBytes = sync.pullMedia(videoId) ?: return null
+            encFile.writeBytes(encryptedBytes)
+        }
         return videoEncryptionService.decryptVideo(encFile)
     }
 
     /** Removes a video record and its encrypted local/media reference. */
     suspend fun remove(videoId: String) {
+        File(storeFileDirFor(videoId), "$videoId.enc").delete()
         modify { list -> list.filterNot { it.id == videoId } }
     }
 

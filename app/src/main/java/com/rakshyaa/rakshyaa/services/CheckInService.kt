@@ -163,6 +163,9 @@ class CheckInService : Service() {
     }
 
     private fun lastKnownLocation(): Location? {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED) return null
         val manager = getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager ?: return null
         return runCatching {
             manager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)

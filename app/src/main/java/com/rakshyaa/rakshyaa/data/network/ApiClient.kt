@@ -47,9 +47,12 @@ class ApiClient @Inject constructor(
     }
 
     private fun authedRequest(path: String, method: String, body: String? = null): Request {
+        check(BuildConfig.CLOUD_ENABLED && securePreferences.getUserId() != "local-device") {
+            "This feature requires a configured server and Google sign-in."
+        }
         val builder = Request.Builder().url("$baseUrl$path")
         securePreferences.getAccessToken()?.let { builder.header("Authorization", "Bearer $it") }
-        builder.method(method, body?.toRequestBody(jsonMedia))
+        builder.method(method, body?.toRequestBody(jsonMedia) ?: if (method in listOf("POST", "PUT", "PATCH")) ByteArray(0).toRequestBody() else null)
         return builder.build()
     }
 
@@ -85,6 +88,11 @@ class ApiClient @Inject constructor(
             response.body?.bytes() ?: ByteArray(0)
         }
     }
+
+    suspend fun deleteAccount(): String = execute(
+        authedRequest("/user/account", "DELETE").newBuilder()
+            .header("x-confirm-delete", "delete-my-account").build()
+    )
 
     suspend fun delete(path: String): String =
         execute(authedRequest(path, "DELETE"))

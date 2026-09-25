@@ -29,11 +29,20 @@ class SOSViewModel @Inject constructor(
         val isSosActivating: Boolean = false,
         val isSosActive: Boolean = false,
         val sosActivationCountdown: Int = 0,
-        val isLoading: Boolean = false
+        val isLoading: Boolean = false,
+        val error: String? = null
     )
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            com.rakshyaa.rakshyaa.services.SosRuntime.state.collect { state ->
+                _uiState.update { it.copy(isSosActive = state.active, error = state.error) }
+            }
+        }
+    }
 
     private var countdownJob: Job? = null
 
@@ -50,7 +59,7 @@ class SOSViewModel @Inject constructor(
                 }
                 startSosService(isFalseAlarm = false)
                 _uiState.update {
-                    it.copy(isSosActivating = false, isSosActive = true, sosActivationCountdown = 0)
+                    it.copy(isSosActivating = false, sosActivationCountdown = 0)
                 }
             }
         }
@@ -61,7 +70,7 @@ class SOSViewModel @Inject constructor(
             countdownJob?.cancel()
             stopSosService()
             _uiState.update {
-                it.copy(isSosActivating = false, isSosActive = false, sosActivationCountdown = 0)
+                it.copy(isSosActivating = false, sosActivationCountdown = 0)
             }
         }
     }
@@ -78,7 +87,8 @@ class SOSViewModel @Inject constructor(
             action = SOSActivationService.ACTION_ACTIVATE_SOS
             putExtra(SOSActivationService.EXTRA_IS_FALSE_ALARM, isFalseAlarm)
         }
-        runCatching { context.startForegroundService(intent) }
+        runCatching { androidx.core.content.ContextCompat.startForegroundService(context, intent) }
+            .onFailure { com.rakshyaa.rakshyaa.services.SosRuntime.failed("SOS could not start. Use the message or dialer action.") }
     }
 
     private fun stopSosService() {

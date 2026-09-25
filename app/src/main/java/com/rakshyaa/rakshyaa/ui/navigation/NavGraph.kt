@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -65,7 +66,7 @@ object HomeScreen : BaseScreen(
     @Composable
     override fun render(navController: NavHostController, authViewModel: AuthViewModel) {
         com.rakshyaa.rakshyaa.ui.screens.HomeScreen(
-            userEmail = authViewModel.authState.value.user?.email,
+            userEmail = authViewModel.authState.collectAsState().value.user?.email,
             onNavigate = { route -> navController.navigate(route) }
         )
     }

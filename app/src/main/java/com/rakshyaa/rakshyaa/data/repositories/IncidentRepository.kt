@@ -44,11 +44,14 @@ class IncidentRepository @Inject constructor(
         )
         modify { it + incident }
 
+        if (store.accountId == "local-device") return incident
+
         // Report to backend so admin can see active emergencies (best-effort).
         runCatching {
             val body = Json.encodeToString(
                 IncidentRequest.serializer(),
                 IncidentRequest(
+                    id = incident.id,
                     status = "active",
                     latitude = latitude,
                     longitude = longitude,
@@ -64,6 +67,6 @@ class IncidentRepository @Inject constructor(
         modify { list ->
             list.map { if (it.id == id) it.copy(status = "resolved") else it }
         }
-        runCatching { apiClient.postJson("/incidents/$id/resolve", "{}") }
+        if (store.accountId != "local-device") runCatching { apiClient.postJson("/incidents/$id/resolve", "{}") }
     }
 }

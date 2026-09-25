@@ -53,7 +53,6 @@ class VideoEncryptionService @Inject constructor(
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setKeySize(256)
                 .setUserAuthenticationRequired(false)
-                .setUnlockedDeviceRequired(false)
                 .build()
         )
         return generator.generateKey()

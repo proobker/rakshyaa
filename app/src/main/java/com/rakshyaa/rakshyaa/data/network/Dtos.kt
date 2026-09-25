@@ -46,6 +46,7 @@ data class ErrorResponse(val error: String? = null)
 
 @Serializable
 data class IncidentRequest(
+    val id: String? = null,
     val status: String = "active",
     val latitude: Double? = null,
     val longitude: Double? = null,

@@ -5,7 +5,7 @@
 
     <!-- Auth / Login -->
     <string name="login_welcome">Welcome to Rakshyaa</string>
-    <string name="login_subtitle">Your personal safety companion. Sign in to continue.</string>
+    <string name="login_subtitle">Your personal safety tools. Continue locally or sign in when cloud mode is configured.</string>
     <string name="email">Email</string>
     <string name="enter_email">Enter your email</string>
     <string name="password">Password</string>
@@ -67,8 +67,8 @@
     <string name="sign_out">Sign Out</string>
 
     <!-- SOS -->
-    <string name="sos_inactive_title">You are safe</string>
-    <string name="sos_inactive_description">If you are in danger, press SOS to immediately alert your emergency contacts and share your live location.</string>
+    <string name="sos_inactive_title">Emergency assistance</string>
+    <string name="sos_inactive_description">Start SOS to record your available location. Use the actions below to call or prepare a message.</string>
     <string name="active_sos">ACTIVE SOS</string>
     <string name="activate_sos">ACTIVATE SOS</string>
     <string name="deactivate_sos">Deactivate SOS</string>
@@ -76,19 +76,19 @@
     <string name="sos_activating_title">SOS activating</string>
     <string name="sos_activating_description">Activating in %1$d seconds…</string>
     <string name="sos_active_title">SOS Active</string>
-    <string name="sos_active_description">Help has been alerted. Your live location is being shared.</string>
-    <string name="emergency_called">Emergency called</string>
-    <string name="emergency_called_active">Emergency services alerted</string>
-    <string name="emergency_called_inactive">Will call 112 on activation</string>
-    <string name="location_sharing">Location sharing</string>
-    <string name="location_sharing_active">Live location sharing active</string>
-    <string name="location_sharing_inactive">Location will be shared</string>
-    <string name="admin_notified">Admin notified</string>
-    <string name="admin_notified_active">Admin portal notified</string>
-    <string name="admin_notified_inactive">Incident sent to backend</string>
+    <string name="sos_active_description">SOS tracking is active on this device. Use the SMS or dialer action to contact someone. Incident delivery depends on your connection.</string>
+    <string name="emergency_called">Contacting help</string>
+    <string name="emergency_called_active">Use the message or dialer action below</string>
+    <string name="emergency_called_inactive">Calls and messages require your confirmation</string>
+    <string name="location_sharing">Location recording</string>
+    <string name="location_sharing_active">Records available location fixes on this device</string>
+    <string name="location_sharing_inactive">Requires location permission</string>
+    <string name="admin_notified">Incident record</string>
+    <string name="admin_notified_active">Stored on this device; cloud delivery is not confirmed</string>
+    <string name="admin_notified_inactive">Cloud reporting requires sign-in and a configured server</string>
     <string name="sos_emergency_info">For immediate danger, call the emergency services in your area.</string>
     <string name="deactivate_sos_confirmation_title">Deactivate SOS?</string>
-    <string name="deactivate_sos_confirmation_message">Are you sure you are safe? This will stop alerting your emergency contacts.</string>
+    <string name="deactivate_sos_confirmation_message">This will stop SOS location recording on this device and attempt to resolve the incident report.</string>
     <string name="yes_deactivate">Yes, I\'m safe</string>
     <string name="no_keep_active">No, keep active</string>
     <string name="cancel">Cancel</string>
@@ -98,7 +98,7 @@
     <!-- Tracking / Services -->
     <string name="tracking_channel_name">Location tracking</string>
     <string name="tracking_notification_title">Location tracking active</string>
-    <string name="tracking_notification_text">Your location is being shared with your trusted contacts.</string>
+    <string name="tracking_notification_text">Your location is being recorded on this device.</string>
 
     <!-- Check-in service -->
     <string name="check_in_channel_name">Safety check-ins</string>
@@ -117,7 +117,7 @@
     <string name="tracking_active">Tracking Active</string>
     <string name="tracking_inactive">Tracking Inactive</string>
     <string name="tracking_permission_needed">Location permission required</string>
-    <string name="tracking_permission_message">Grant location access to share your location with trusted contacts.</string>
+    <string name="tracking_permission_message">Grant location access to record your route on this device.</string>
     <string name="grant_permission">Grant Permission</string>
     <string name="permission_needed">Location permission required</string>
     <string name="permission_needed_desc">Grant location access to monitor your ride and send alerts if you go off route.</string>
@@ -160,7 +160,7 @@
     <string name="quick_check_in_title">Quick Check-in</string>
     <string name="quick_check_in_desc">Check in immediately to confirm your safety</string>
     <string name="no_check_ins">No scheduled check-ins</string>
-    <string name="no_check_ins_desc">Schedule a check-in to have automated safety checks with escalation to your contacts</string>
+    <string name="no_check_ins_desc">Schedule a reminder to check in and review your safety.</string>
     <string name="select_check_in_interval">Select check-in interval</string>
     <string name="interval">Interval</string>
     <string name="minutes">minutes</string>
@@ -177,7 +177,7 @@
     <string name="ride_active">Ride Active</string>
     <string name="ride_tracking_desc">Your route is being tracked. Deviation alerts are enabled.</string>
     <string name="ride_deviated">Route Deviation Detected</string>
-    <string name="ride_deviated_desc">You have deviated from your planned route. Emergency contacts have been notified.</string>
+    <string name="ride_deviated_desc">Your route may have changed. Contact someone you trust if you need help.</string>
     <string name="route_deviation_alert">Route Deviation Alert!</string>
     <string name="route_deviation_desc">You are off the planned route. Check your surroundings.</string>
     <string name="set_deviation_threshold">Set deviation threshold</string>
@@ -270,7 +270,7 @@
     <string name="location_sharing_title">Location Sharing</string>
     <string name="location_sharing_desc">Allow location sharing with emergency contacts</string>
     <string name="auto_backup">Auto Backup</string>
-    <string name="auto_backup_desc">Automatically backup encrypted data to cloud</string>
+    <string name="auto_backup_desc">Encrypted backup for this device; cannot restore after reinstall</string>
     <string name="data_management">Data Management</string>
     <string name="sync_now_desc">Manually sync encrypted data with backend</string>
     <string name="last_sync">Last Sync</string>
@@ -300,4 +300,29 @@
     <string name="change_photo">Change Photo</string>
     <string name="save_changes">Save Changes</string>
     <string name="sign_out_in_progress">Signing out…</string>
+    <string name="home_intro">Your everyday safety tools</string>
+    <string name="home_sos_action">Need help now?</string>
+    <string name="home_sos_hint">Open emergency tools and prepare a message</string>
+    <string name="continue_google">Continue with Google</string>
+    <string name="signing_in">Signing in…</string>
+    <string name="login_tools_title">A little preparation. More peace of mind.</string>
+    <string name="login_tools_body">Keep trusted contacts close, plan a check-in, and find help nearby.</string>
+    <string name="delete_account">Delete account and data</string>
+    <string name="delete_account_confirm">Delete permanently</string>
+    <string name="delete_account_explanation">This deletes the signed-in cloud account, if any, and clears all app data on this installation. Local-only mode deletes device data. The app will close. This cannot be undone.</string>
+    <string name="backup_device_notice">Encrypted cloud backups can be restored only while this device retains its encryption keys. They cannot recover data after reinstall, clearing app storage, or moving to a new phone. Export any evidence you need before removing the app.</string>
+    <string name="message_contacts">Prepare SMS for trusted contacts</string>
+    <string name="preparing_message">Preparing message…</string>
+    <string name="open_emergency_dialer">Open phone dialer</string>
+    <string name="sms_confirmation_notice">You must send the message in your SMS app. Check the recipients and location first. Carrier charges may apply. Opening the composer does not confirm delivery.</string>
+    <string name="sms_app_unavailable">No SMS app could be opened. Use your phone to contact someone you trust.</string>
+    <string name="dialer_unavailable">No phone dialer could be opened on this device.</string>
+    <string name="sos_permission_denied">Location permission is needed to start SOS tracking. You can still use the message and dialer actions.</string>
+    <string name="continue_on_device">Continue on this device</string>
+    <string name="local_mode_notice">Use local safety tools without an account. Cloud backup and incident reporting need a configured server. SMS messages may incur carrier charges.</string>
+    <string name="on_device">On this device</string>
+    <string name="close">Close</string>
+    <string name="privacy_information">In local mode, contacts, profile details, location logs, and recorded videos stay in app-private storage, encrypted with Android Keystore keys. Map tiles and links may use external map services. Preparing an SMS passes the selected recipients and message to your messaging app; you choose whether to send it.\n\nWhen cloud mode is configured and you sign in with Google, the backend receives your Google profile, edited profile details, and incident location reports. Optional backups contain encrypted data and media, but the server also stores account and file metadata.\n\nDelete account and data in this screen removes server account data when signed in, then clears this installation. Uninstalling or clearing storage destroys access to device-bound encrypted backups. Copies exported to other apps or sent by SMS are controlled by those apps and recipients.</string>
+    <string name="terms_information">Rakshyaa provides personal safety tools and is not an emergency dispatch service. It cannot guarantee protection, phone coverage, accurate location, or delivery of messages. SOS tracking does not automatically call anyone or send SMS. Review and send messages in your messaging app, and dial the appropriate local emergency number when needed. Carrier or network charges may apply. Use the app lawfully and obtain consent before sharing another person’s contact details.</string>
+    <string name="support_information">For immediate danger, use the phone dialer to contact local emergency services.\n\nFor SMS, install a compatible messaging app, review the recipient list, and press Send there. If location is unavailable, enable device location and grant location permission.\n\nLocal mode needs no account or hosted server. Cloud functions require a separately configured backend. Encrypted backups cannot be restored after losing the original device keys. Export important evidence before uninstalling.\n\nThis build does not provide a staffed response service or a published support inbox.</string>
 </resources>

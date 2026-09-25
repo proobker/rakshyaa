@@ -65,7 +65,7 @@ fun BottomNavBar(
                     ) {
                         Icon(
                             imageVector = if (isSelected) screen.selectedIcon else screen.icon,
-                            contentDescription = screen.label,
+                            contentDescription = null,
                             tint = if (isSelected) primaryColor else onSurfaceVariant,
                             modifier = Modifier.size(24.dp)
                         )
@@ -74,8 +74,10 @@ fun BottomNavBar(
                 label = {
                     Text(
                         text = screen.label,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                         color = if (isSelected) primaryColor else onSurfaceVariant,
-                        fontSize = 10.sp,
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (isSelected) androidx.compose.ui.text.font.FontWeight.Medium else androidx.compose.ui.text.font.FontWeight.Normal
                     )
                 },

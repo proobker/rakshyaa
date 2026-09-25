@@ -55,6 +55,7 @@ class SOSActivationService : Service() {
 
     private var isSosActive = false
     private var currentIncidentId: String? = null
+    private var incidentJob: Job? = null
     private var locationJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.IO + Job())
 
@@ -64,7 +65,7 @@ class SOSActivationService : Service() {
                 activateSos(intent.getBooleanExtra(EXTRA_IS_FALSE_ALARM, false))
             ACTION_DEACTIVATE_SOS -> deactivateSos()
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun activateSos(isFalseAlarm: Boolean) {
@@ -97,36 +98,47 @@ class SOSActivationService : Service() {
                 }
             } catch (e2: Exception) {
                 Log.e("SOSActivationService", "Failed to start foreground service", e2)
+                isSosActive = false
+                SosRuntime.failed("SOS could not start. Grant location permission, or use the message and dialer actions.")
                 stopSelf()
                 return
             }
         }
 
+        SosRuntime.started()
         val lastKnown = lastKnownLocation()
-        scope.launch {
+        incidentJob = scope.launch {
             val incident = incidentRepository.create(
                 latitude = lastKnown?.latitude,
                 longitude = lastKnown?.longitude,
                 note = if (isFalseAlarm) "false_alarm" else ""
             )
-            currentIncidentId = incident.id
+            if (isSosActive) currentIncidentId = incident.id
+            else incidentRepository.resolve(incident.id)
         }
 
-        if (!isFalseAlarm) makeEmergencyCall()
         startSosLocationUpdates()
     }
 
     private fun deactivateSos() {
         if (!isSosActive) return
         isSosActive = false
+        SosRuntime.stopped()
         locationJob?.cancel()
         locationJob = null
-        currentIncidentId?.let { id ->
-            scope.launch { incidentRepository.resolve(id) }
-        }
+        val incidentId = currentIncidentId
         currentIncidentId = null
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        scope.launch {
+            try {
+                incidentJob?.join()
+                if (incidentId != null) incidentRepository.resolve(incidentId)
+            } finally {
+                if (!isSosActive) {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
+            }
+        }
     }
 
     private fun startSosLocationUpdates() {
@@ -164,21 +176,6 @@ class SOSActivationService : Service() {
         }.getOrNull()
     }
 
-    private fun makeEmergencyCall() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.CALL_PHONE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-        runCatching {
-            val callIntent = Intent(Intent.ACTION_CALL, Uri.parse("tel:112"))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(callIntent)
-        }
-    }
-
     private fun buildSosNotification(useFullScreenIntent: Boolean = true): Notification {
         val intent = Intent(this, com.rakshyaa.rakshyaa.ui.MainActivity::class.java)
             .apply { flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP }
@@ -200,9 +197,6 @@ class SOSActivationService : Service() {
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setSound(alarmUri)
-        if (useFullScreenIntent) {
-            builder.setFullScreenIntent(pendingIntent, true)
-        }
         return builder.build()
     }
 
@@ -225,6 +219,7 @@ class SOSActivationService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (isSosActive) SosRuntime.stopped()
         scope.cancel()
     }
 }

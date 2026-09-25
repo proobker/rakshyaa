@@ -14,12 +14,18 @@ import javax.inject.Singleton
  */
 @Singleton
 class EncryptedLocalStore @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val preferences: SecurePreferences
 ) {
-    private val storeDir: File by lazy {
-        val dir = File(context.filesDir, "encrypted_data")
+    val accountId: String? get() = preferences.getUserId()
+
+    private val storeDir: File get() {
+        val user = accountId ?: error("Sign in before accessing private data")
+        val account = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(user.toByteArray()).joinToString("") { "%02x".format(it) }
+        val dir = File(context.filesDir, "accounts/$account/encrypted_data")
         if (!dir.exists()) dir.mkdirs()
-        dir
+        return dir
     }
 
     /** Encrypts [plain] under [key] and writes the encrypted blob to disk. */
@@ -46,6 +52,15 @@ class EncryptedLocalStore @Inject constructor(
     fun writeRaw(key: String, encryptedText: String) {
         File(storeDir, sanitize(key)).writeText(encryptedText)
     }
+
+    /** Authenticate downloaded ciphertext before replacing a working local copy. */
+    fun restoreRaw(key: String, encryptedText: String): Boolean {
+        if (runCatching { CryptoManager.decryptString(encryptedText) }.isFailure) return false
+        writeRaw(key, encryptedText)
+        return true
+    }
+
+    fun keys(): Set<String> = storeDir.listFiles()?.filter { it.isFile }?.map { it.name }?.toSet().orEmpty()
 
     /** Whether a stored blob exists for [key]. */
     fun exists(key: String): Boolean = File(storeDir, sanitize(key)).exists()

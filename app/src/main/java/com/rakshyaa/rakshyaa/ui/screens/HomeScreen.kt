@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -85,96 +86,105 @@ fun HomeScreen(
             title = stringResource(R.string.home_safe_places),
             description = stringResource(R.string.home_safe_places_desc),
             icon = Icons.Default.LocalHospital,
-            color = Color(0xFF009688),
+            color = primaryColor,
             route = "safeplaces"
         ),
         FeatureItem(
             title = stringResource(R.string.home_legal),
             description = stringResource(R.string.home_legal_desc),
             icon = Icons.Default.Gavel,
-            color = Color(0xFF673AB7),
+            color = tertiaryColor,
             route = "legal"
         ),
         FeatureItem(
             title = stringResource(R.string.home_ride_monitoring),
             description = stringResource(R.string.home_ride_monitoring_desc),
             icon = Icons.Default.DirectionsCar,
-            color = Color(0xFF3F51B5),
+            color = primaryColor,
             route = "ride"
         ),
         FeatureItem(
             title = stringResource(R.string.home_check_ins),
             description = stringResource(R.string.home_check_ins_desc),
             icon = Icons.Default.EmojiEvents,
-            color = Color(0xFFFF9800),
+            color = tertiaryColor,
             route = "checkin"
         ),
         FeatureItem(
             title = stringResource(R.string.home_video_capture),
             description = stringResource(R.string.home_video_capture_desc),
             icon = Icons.Default.Videocam,
-            color = Color(0xFFE91E63),
+            color = primaryColor,
             route = "video"
         ),
         FeatureItem(
             title = stringResource(R.string.home_fake_call),
             description = stringResource(R.string.home_fake_call_desc),
             icon = Icons.Default.Phone,
-            color = Color(0xFF795548),
+            color = tertiaryColor,
             route = "fakecall"
         )
     )
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 152.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxSize()
     ) {
-        // Header
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Default.Shield,
-                contentDescription = null,
-                tint = primaryColor,
-                modifier = Modifier.size(72.dp)
-            )
-            Text(
-                text = stringResource(R.string.home_title),
-                style = MaterialTheme.typography.headlineMedium,
-                color = primaryColor
-            )
-            userEmail?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = onSurfaceVariant
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Shield, contentDescription = null,
+                    tint = primaryColor, modifier = Modifier.size(40.dp)
                 )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.home_title), style = MaterialTheme.typography.headlineMedium)
+                    Text(
+                        stringResource(R.string.home_intro),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = onSurfaceVariant
+                    )
+                }
             }
         }
-
-Spacer(modifier = Modifier.height(16.dp))
-
-        // Feature grid - adaptive columns so text never gets cramped
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 156.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            items(features) { feature ->
-                FeatureCard(
-                    feature = feature,
-                    onClick = { onNavigate(feature.route) },
-                    isPrimary = feature.isPrimary
-                )
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Card(
+                onClick = { onNavigate("sos") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = colors.errorContainer,
+                    contentColor = colors.onErrorContainer
+                ),
+                shape = MaterialTheme.shapes.extraLarge
+            ) {
+                Row(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Shield, null, modifier = Modifier.size(40.dp))
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(stringResource(R.string.home_sos_action), style = MaterialTheme.typography.headlineSmall)
+                        Text(stringResource(R.string.home_sos_hint), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
             }
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Text(
+                stringResource(R.string.home_subtitle),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+            )
+        }
+        items(features.filterNot { it.isPrimary }, key = { it.route }) { feature ->
+            FeatureCard(feature = feature, onClick = { onNavigate(feature.route) })
         }
     }
 }
@@ -217,7 +227,7 @@ Card(
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.Start
             ) {
                 // Icon with colored background
                 Box(
@@ -236,24 +246,20 @@ Card(
                 }
                 
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.Start
                 ) {
                     Text(
                         text = feature.title,
                         style = MaterialTheme.typography.titleMedium,
                         color = onSurface,
                         fontWeight = if (isPrimary) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        textAlign = TextAlign.Start,
                     )
                     Text(
                         text = feature.description,
                         style = MaterialTheme.typography.bodySmall,
                         color = onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        textAlign = TextAlign.Start,
                     )
                 }
             }

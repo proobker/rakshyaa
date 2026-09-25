@@ -1,6 +1,7 @@
 package com.rakshyaa.rakshyaa.ui
 
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.rakshyaa.rakshyaa.ui.components.BottomNavBar
@@ -28,6 +30,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             RakshyaaTheme {
                 RakshyaaApp()
@@ -57,7 +60,13 @@ fun RakshyaaApp(viewModel: AuthViewModel = hiltViewModel()) {
                 BottomNavBar(
                     navController = navController,
                     currentRoute = currentRoute,
-                    onNavigate = { route -> navController.navigate(route) }
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
         }

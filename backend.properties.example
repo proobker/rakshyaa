@@ -1,0 +1,7 @@
+# Default release: free local mode, no hosted backend required.
+ENABLE_CLOUD=false
+
+# Optional: enable only after deploying your own HTTPS backend.
+# ENABLE_CLOUD=true
+# BACKEND_BASE_URL=https://your-backend.example
+# GOOGLE_WEB_CLIENT_ID=your-client-id.apps.googleusercontent.com

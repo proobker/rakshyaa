@@ -50,6 +50,7 @@ class ProfileRepository @Inject constructor(
     fun displayPictureRef(): String? = localPictureRef()?.takeIf { it.isNotEmpty() } ?: googlePicture()
 
     suspend fun fetchRemoteProfile(): UserDto? = withContext(Dispatchers.IO) {
+        if (authRepository.state.value.user?.sub == AuthRepository.LOCAL_USER) return@withContext null
         runCatching {
             val body = apiClient.get("/user/profile")
             json.decodeFromString<MeResponse>(body).user
@@ -58,6 +59,12 @@ class ProfileRepository @Inject constructor(
 
     /** Pushes editable profile fields; keeps the existing server picture unless one is passed. */
     suspend fun saveProfile(name: String, phone: String, bio: String): UserDto? {
+        if (authRepository.state.value.user?.sub == AuthRepository.LOCAL_USER) {
+            store.savePlain(PROFILE_NAME_KEY, name)
+            store.savePlain(PROFILE_PHONE_KEY, phone)
+            store.savePlain(PROFILE_BIO_KEY, bio)
+            return UserDto(sub = AuthRepository.LOCAL_USER, name = name, phone = phone, bio = bio)
+        }
         val existing = fetchRemoteProfile()
         val picture = existing?.picture
             ?: authRepository.state.value.user?.picture
