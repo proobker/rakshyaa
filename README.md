@@ -1,173 +1,98 @@
-# Rakshyaa - Women's Safety Android Application
+# Rakshyaa Android app
 
-A comprehensive women's safety Android app. Sign-in uses **Google (Credential Manager)**,
-with the ID token verified by our **own Node.js backend** (no Supabase). All sensitive data
-is **encrypted on-device** (Android Keystore, AES-256-GCM) and optionally backed up to the
-backend as **opaque encrypted blobs** — the server never sees plaintext.
+A Kotlin/Jetpack Compose app for local safety records and optional cloud services.
+Build from this directory; the workspace root is not the Android Gradle project.
 
-**Current Version**: 1.1
+## Build configuration
 
-## Features:
+The checked-in configuration is:
 
-- **Authentication**: Google sign-in via Credential Manager; backend verifies the ID
-  token and issues a session JWT.
-- **Restore-on-login**: on session start, `AppDataSync` pulls all encrypted backup blobs and the
-  profile fields back from the backend, so data survives logout/reinstall.
-- **Profile**: Google avatar or photo-picker photo, editable phone + bio
-  (`GET/PUT /user/profile`), sign-out moved here from Home. Website links point at
-  `https://rakshyaapp.github.io`.
-- **Home dashboard**: adaptive feature grid (responsive columns) with single-line card text.
-- **Location Tracking**: permission-safe start/stop foreground service (fine → background
-  two-step permission flow); continuous GPS tracking.
-- **SOS Emergency System**:
-  - SOS triggering with a short countdown to prevent false alarms
-  - Emergency calling integration
-  - Incident reporting with location sharing to the backend
-- **Encrypted Video Capture (camera-style UI)**:
-  - CameraX `Recorder` with start/stop control bar and live mm:ss overlay
-  - FRONT/REAR + recording ON/OFF chips
-  - Client-side AES-256-GCM encryption (key in Android Keystore) + optional backend backup
-- **Ride Monitoring**:
-  - Start ride with in-screen location-permission request
-  - GPS logging with route deviation detection (Haversine formula)
-  - Alerts when leaving safe zones
-- **Safe Places Discovery**:
-  - Live nearby hospitals / clinics / police / fire stations from OpenStreetMap (backend
-    proxies Overpass), sorted by distance with an adjustable search radius (1–20 km)
-  - "Closest match" card when nothing is within the radius
-  - Offline fallback + user-submitted safe places
-- **Check-ins System**:
-  - Scheduled safety check-ins with grace periods
-  - Foreground service with `specialUse` type (Android 14-safe)
-  - Geofence validation and escalation procedures
-- **Emergency Contacts Management**:
-  - Encrypted storage of contact information
-  - Escalation procedures for missed check-ins
-- **Fake Call Feature**: realistic incoming-call simulation with a **live delay slider (5–60s)**
-  and a phase machine (idle → countdown → incoming → connected) for escape scenarios.
-- **Legal Help Section**: offline access to legal resources and support information.
+| Setting | Value |
+| --- | --- |
+| Application ID / namespace | `com.rakshyaa.rakshyaa` |
+| Version name / code | 1.1 / 2 |
+| Minimum / compile / target SDK | 24 / 36 / 36 |
+| Android Gradle Plugin / Gradle wrapper | 8.10.1 / 8.11.1 |
+| Kotlin / Hilt | 2.0.20 / 2.52 |
+| Compose BOM / CameraX | 2024.08.00 / 1.4.2 |
+| Java/Kotlin target | 17 |
+| Cloud default | Disabled |
 
-## Repository Layout
+Sources: [app/build.gradle](app/build.gradle), [build.gradle](build.gradle), and
+[Gradle wrapper properties](gradle/wrapper/gradle-wrapper.properties).
+Ignored `backend.properties` may override local build settings.
 
-```
-rakshyaa/     # Native Android app (Kotlin, Jetpack Compose, Hilt)
-backend/      # Own Node.js + TypeScript + Express + SQLite backend
-admin/        # Next.js admin portal (reads backend incidents via API key)
+```powershell
+.\gradlew.bat assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Backend
+Use [LOCAL_SETUP.md](LOCAL_SETUP.md) for prerequisites, local mode, and optional
+Google/Worker configuration. On POSIX, replace `.\gradlew.bat` with `./gradlew`.
 
-The backend lives in `backend/`. It verifies Google ID tokens, issues session JWTs,
-and stores encrypted-blob backups in SQLite (`node:sqlite`) + disk files.
+## Feature map
 
-Setup:
+| Feature | Current implementation |
+| --- | --- |
+| Login | Local-device session; Google sign-in shown when cloud is enabled |
+| Home/navigation | Compose dashboard, bottom tabs, feature routes |
+| SOS | Cancellable countdown, foreground runtime state, local incident and optional cloud report |
+| Emergency actions | Prepare SMS for up to five valid distinct contacts; open unnumbered dialer |
+| Contacts | Encrypted CRUD and primary-contact selection |
+| Location | Foreground GPS logging, recent history, one-shot location with stored fallback |
+| Rides | Start/end records and GPS points; deviation heuristic has limitations |
+| Check-ins | Pending/completed/missed records and service timer; lifecycle/delivery gaps remain |
+| Safe places | Saved entries, optional Overpass-backed lookup, bundled sample fallback |
+| Legal resources | Bundled text and user-added notes |
+| Fake call | Delayed simulated incoming/connected call with ringtone/vibration |
+| Video | CameraX capture, encrypted local media, optional best-effort cloud upload |
+| Profile | Local or remote text editing, cloud photo upload, settings, sign-out, deletion |
 
-```bash
-cd backend
-npm install
-cp .env.example .env   # fill in GOOGLE_WEB_CLIENT_ID, JWT_SECRET, ADMIN_API_KEY
-npm run dev            # http://localhost:8080  (GET /health to check)
+Feature presence does not certify reliable emergency delivery. See
+[known limitations](../docs/KNOWN_LIMITATIONS.md), especially check-ins, ride deviation,
+sample locations/resources, and cloud media lifecycle.
+
+## Source map
+
+Paths below are relative to `app/src/main/java/com/rakshyaa/rakshyaa/`.
+
+| Path | Responsibility |
+| --- | --- |
+| `RakshyaaApplication.kt`, `di/` | Hilt application and location-provider binding |
+| `ui/MainActivity.kt`, `ui/navigation/` | Session gate, scaffold, feature routes |
+| `ui/screens/`, `ui/components/`, `ui/theme/` | Compose screens, emergency intents, theme |
+| `viewmodels/` | UI state and orchestration |
+| `data/auth/`, `data/network/` | Sessions, Google exchange, account deletion, API client/DTOs |
+| `data/local/`, `utils/CryptoManager.kt` | Account-scoped encrypted storage and preferences |
+| `data/models/`, `data/repositories/` | Serialized records and feature persistence |
+| `data/sync/` | Backup upload, authenticated restore, login orchestration |
+| `services/` | Four manifest services and six injected helpers |
+| `utils/GeoUtils.kt` | Distance calculations |
+
+The [manifest](app/src/main/AndroidManifest.xml) registers SOS, location tracking,
+ride monitoring, and check-in services. Helper classes such as FakeCallService
+are not manifest services.
+
+## Persistence and privacy
+
+App files are scoped by account ID. Logout keeps saved files, while account/data
+deletion clears all local application data. Backups use device-bound keys and
+cannot recover encrypted content after losing the original installation's keys.
+
+Cloud profiles and incidents are readable by the backend; encrypted backups are
+a separate channel. Detailed behavior is in [architecture](../docs/ARCHITECTURE.md)
+and [security](../docs/SECURITY.md).
+
+## Verification and release
+
+```powershell
+.\gradlew.bat test compileDebugKotlin lintDebug lintRelease
 ```
 
-See [`backend/README.md`](../backend/README.md) and `backend/src` for the API surface and schema.
+Run `connectedDebugAndroidTest` with a configured device for instrumentation.
+See [testing](../docs/TESTING.md), [release process](../RELEASE.md), and
+[Google release configuration](GOOGLE_RELEASE.md). Production signing is already
+wired through ignored signing properties or environment variables.
 
-## Development Setup (Android)
-
-### Prerequisites
-- Android Studio (or equivalent) and an Android SDK with platform 34 / build-tools.
-- Java 17+ (JDK 21 works).
-- Node.js 22+ (for backend and admin).
-
-### Build the app
-
-```bash
-cd rakshyaa
-./gradlew assembleDebug
-```
-
-Output: `app/build/outputs/apk/debug/app-debug.apk`
-
-Other useful commands:
-
-```bash
-./gradlew test              # unit tests
-./gradlew lint              # lint
-./gradlew installDebug      # install on a connected device/emulator
-```
-
-### Google sign-in configuration (required)
-
-Rakshyaa obtains a Google ID token and sends it to the backend for verification. The sign-in flow
-is now **verified end-to-end** on the `Medium_Phone_API_36.1` (google_apis_playstore, API 36)
-emulator with a Google Test-user account.
-
-1. In **Google Cloud Console**, create an OAuth 2.0 **Web** client and copy its **Client ID**
-   (used as the "server client id").
-2. Create a second OAuth client → **Android** → package `com.rakshyaa.rakshyaa` + SHA-1
-   `0F:2E:8A:D0:82:3D:7D:A5:C8:BF:15:0E:5A:2B:BA:FB:9F:E5:AE:01`.
-3. On the **OAuth consent screen**, set status **Testing** and add your Google account as a
-   **Test user**.
-4. Wire the **same Web client ID** in **both** places:
-   - `backend/.env` → `GOOGLE_WEB_CLIENT_ID=765590596814-68hll5uflj7b4h9u8r9vlgrgiqvg4amu.apps.googleusercontent.com`
-   - `rakshyaa/backend.properties` (root of rakshyaa/) → `GOOGLE_WEB_CLIENT_ID=...` (same value)
-5. Point `BACKEND_BASE_URL` at your running backend
-   (e.g. `http://10.0.2.2:8080` from the emulator; set in `rakshyaa/backend.properties`).
-6. **Dev-only cleartext**: the app includes `res/xml/network_security_config.xml` allowing
-   `http://10.0.2.2` and `http://localhost` for the emulator.
-
-The app currently builds with the Web client ID baked into `BuildConfig.GOOGLE_WEB_CLIENT_ID`
-and the backend verifies the same audience. The Android client (type "Android") exists only in
-the console to map package+SHA-1; its client ID is **not** used in code.
-
-## Architecture
-
-1. **Android App (Client)** — Google sign-in, foreground services for location/SOS/ride
-   monitoring/check-ins, CameraX video capture, encrypted local storage via Android Keystore,
-   and encrypted-blob backup + **restore-on-login** (`data/sync/AppDataSync.kt`) to the backend.
-2. **Backend (self-hosted)** — verifies Google ID tokens, issues session JWTs, serves profile
-   (`GET/PUT /user/profile`), stores opaque encrypted backup blobs (SQLite metadata + disk
-   files), proxies Overpass/OpenStreetMap for nearby safe places (`GET /places/nearby`).
-   It never holds or reads plaintext.
-3. **Admin portal** — web interface that reads backend incident data via an API key.
-
-## Security Model
-
-- All sensitive data (contacts, incident logs, videos) is encrypted on-device with
-  AES-256-GCM; keys live only in the Android Keystore.
-- The backend receives only **encrypted** blobs — it has no decryption keys.
-- The Google ID token is always verified server-side; the client does not trust tokens alone.
-- All network communication should be over HTTPS in production.
-
-## Running End-to-End (verified)
-
-1. Start the backend: `cd backend && npm run dev`.
-2. Set `BACKEND_BASE_URL=http://10.0.2.2:8080` and the Web client ID in
-   `rakshyaa/backend.properties`.
-3. Set the same Web client ID + `JWT_SECRET` in `backend/.env`.
-4. Build & install: `cd rakshyaa && ./gradlew assembleDebug && adb install -r app-debug.apk`.
-4. On the emulator (`Medium_Phone_API_36.1`, google_apis_playstore), sign in the same Google
-   account added as a Test user on the OAuth consent screen.
-5. Launch the app → **Sign in with Google** → pick the Test-user account → backend returns a
-   session JWT → **Home** screen appears.
-
-The APK builds with `compileSdk 34`, `minSdk 24`, `targetSdk 34`, version `1.1`.
-Output: `app/build/outputs/apk/debug/app-debug.apk`.
-
-## Tests
-
-The unit-test suite was rewritten against the current stack (all stale Supabase-era tests
-deleted/replaced):
-
-```bash
-cd rakshyaa
-./gradlew test          # 47 unit tests — Robolectric + Mockito (inline) + Truth + coroutines-test
-```
-
-Coverage highlights: `FakeCallService` phase machine, `AuthViewModel` (login restore trigger),
-`SecurePreferences`, `LegalHelpService`, `EmergencyContactsService`, `LocationRepository`,
-`SOSActivationService`. `SecurePreferences` exposes an internal `SharedPreferences` constructor
-so Robolectric doesn't need the Android Keystore.
-
-## License
-
-MIT — see the LICENSE file for details.
+For contributor constraints, read [CLAUDE.md](CLAUDE.md) and the root
+[AGENTS.md](../AGENTS.md). The Android license is [MIT](LICENSE).

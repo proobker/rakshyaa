@@ -1,10 +1,11 @@
 package com.rakshyaa.rakshyaa.data.auth
 
 import android.content.Context
+import android.app.Activity
 import androidx.credentials.Credential
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.rakshyaa.rakshyaa.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -18,24 +19,21 @@ import javax.inject.Singleton
  * The returned ID token is sent to our backend for verification.
  */
 @Singleton
-class GoogleAuthClient @Inject constructor(
-    @ApplicationContext private val context: Context
+class GoogleAuthClient internal constructor(
+    private val credentialManager: CredentialManager
 ) {
-    private val credentialManager = CredentialManager.create(context)
+    @Inject constructor(@ApplicationContext context: Context) : this(CredentialManager.create(context))
 
     /** Launches the Google sign-in sheet and returns a Google ID token. */
-    suspend fun getGoogleIdToken(): String = withContext(Dispatchers.Main) {
-        val googleIdOption = GetGoogleIdOption.Builder()
-            .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
-            .setFilterByAuthorizedAccounts(false)
-            .setAutoSelectEnabled(false)
+    suspend fun getGoogleIdToken(activity: Activity): String = withContext(Dispatchers.Main) {
+        val googleIdOption = GetSignInWithGoogleOption.Builder(BuildConfig.GOOGLE_WEB_CLIENT_ID)
             .build()
 
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(googleIdOption)
             .build()
 
-        val response = credentialManager.getCredential(context, request)
+        val response = credentialManager.getCredential(activity, request)
         handleCredential(response.credential)
     }
 

@@ -41,8 +41,8 @@ class AuthViewModel @Inject constructor(
 
     fun continueOnDevice() = authRepository.continueOnDevice()
 
-    fun signInWithGoogle() {
-        viewModelScope.launch { authRepository.signInWithGoogle() }
+    fun signInWithGoogle(activity: android.app.Activity) {
+        viewModelScope.launch { authRepository.signInWithGoogle(activity) }
     }
 
     fun refreshUser() {

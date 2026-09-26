@@ -1,19 +1,45 @@
-# Google sign-in release
+# Google sign-in in release builds
 
-The local build configuration enables Google sign-in and targets `https://rakshya.rabidahal.com.np`. Both a signed APK and AAB are built. Local mode remains available as a fallback.
+Google sign-in is optional and controlled at build time. The checked-in
+[example](backend.properties.example) defaults to local mode; ignored properties
+can enable cloud in a specific APK/AAB.
 
-## Backend blocker
+## Release configuration
 
-During verification, this hostname failed DNS resolution (`getaddrinfo failed`). A Google sign-in button alone cannot complete authentication: the app exchanges the Google ID token with `POST /auth/google` on this backend. Set up DNS and HTTPS hosting for the existing `backend/` service, then verify `/health` before distributing this build as functional cloud sign-in. No hosting or paid service was purchased.
+Set `ENABLE_CLOUD=true`, a reachable production HTTPS `BACKEND_BASE_URL`, and a
+Google OAuth Web client ID in ignored `backend.properties`. The Worker must use
+the same `GOOGLE_WEB_CLIENT_ID`. Follow [backend deployment](../backend/DEPLOYMENT.md)
+before enabling cloud for users.
 
-The backend must use the same GOOGLE_WEB_CLIENT_ID as the ignored Android backend.properties. Never use the Android OAuth client ID as the web/server client ID. The backend deployment instructions are in ../backend/DEPLOYMENT.md.
+The build validates URL/client-ID shape, not DNS, TLS, Google project access,
+or a successful token exchange.
 
-## Google Cloud configuration
+## Signing identity
 
-Register an Android OAuth client for package `com.rakshyaa.rakshyaa` and the signing certificate used by the installed app. The directly distributed release APK certificate SHA-1 is:
+Register the installed app's package `com.rakshyaa.rakshyaa` and signing
+certificate with the OAuth Android client configuration. Derive fingerprints
+from `.\gradlew.bat signingReport` or the actual signed APK/certificate.
 
-`76:FE:3D:F8:19:A6:BE:C1:C9:C3:99:03:AD:D8:01:B7:8A:F5:73:C5`
+For direct APK distribution, use the APK signing certificate. For Play-distributed
+builds, use the applicable app-signing certificate; it can differ from the upload
+certificate. Do not reuse a historical developer SHA-1 without checking the artifact.
 
-If publishing through Play App Signing, also register the Play app-signing certificate from Play Console; it may differ from the upload certificate. End-to-end Google authentication remains unverified until DNS, backend configuration and OAuth registration are complete.
+Signing input names and artifact paths are documented in [release process](../RELEASE.md).
+An AAB is a store bundle and is not directly installable with `adb install`.
 
-The APK is installed with ADB. The AAB is a store-upload artifact and cannot be installed directly with `adb install`.
+## Acceptance evidence
+
+For the exact signed artifact and backend revision, record:
+
+1. Backend `/health` reachability over HTTPS.
+2. Matching Web-client audience and Android package/certificate registration.
+3. Google account selection, cancellation, failed-network behavior, and successful
+   `POST /auth/google` exchange.
+4. Profile fetch/edit, logout/login, same-installation backup restore, and account
+   deletion using a disposable test account.
+5. Availability of **Continue on this device** when cloud access is unavailable.
+
+The earlier release notes reported DNS failure for the configured custom domain.
+That is historical evidence only; this documentation audit did not test current
+DNS or authenticate against production. Consult [release readiness](../RELEASE_READINESS.md)
+for checks actually performed during the audit.

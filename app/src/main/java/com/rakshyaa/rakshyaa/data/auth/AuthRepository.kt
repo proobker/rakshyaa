@@ -58,11 +58,11 @@ class AuthRepository @Inject constructor(
 
     companion object { const val LOCAL_USER = "local-device" }
 
-    suspend fun signInWithGoogle() {
+    suspend fun signInWithGoogle(activity: android.app.Activity) {
         if (_state.value.inProgress) return
         _state.value = _state.value.copy(inProgress = true, error = null)
         try {
-            val idToken = googleAuthClient.getGoogleIdToken()
+            val idToken = googleAuthClient.getGoogleIdToken(activity)
             val body = json.encodeToString(GoogleAuthRequest.serializer(), GoogleAuthRequest(idToken))
             val responseBody = apiClient.postJsonPublic("/auth/google", body)
             val response = json.decodeFromString(GoogleAuthResponse.serializer(), responseBody)
@@ -73,6 +73,12 @@ class AuthRepository @Inject constructor(
                 userEmail = response.user.email
             )
             _state.value = AuthState(isLoggedIn = true, user = response.user)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
+            _state.value = _state.value.copy(error = null)
+        } catch (e: androidx.credentials.exceptions.NoCredentialException) {
+            _state.value = _state.value.copy(error = "No Google account is available for sign-in. Add an account in device Settings and check that Google Play services is enabled and up to date, then try again.")
         } catch (e: Exception) {
             _state.value = _state.value.copy(error = e.message ?: "Sign-in failed")
         } finally {

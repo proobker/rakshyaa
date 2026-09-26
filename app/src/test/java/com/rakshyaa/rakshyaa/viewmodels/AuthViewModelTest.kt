@@ -43,8 +43,9 @@ class AuthViewModelTest {
 
     @Test
     fun `signInWithGoogle delegates to AuthRepository`() = runTest(dispatcher) {
-        viewModel.signInWithGoogle()
-        Mockito.verify(authRepository).signInWithGoogle()
+        val activity = mock(android.app.Activity::class.java)
+        viewModel.signInWithGoogle(activity)
+        Mockito.verify(authRepository).signInWithGoogle(activity)
     }
 
     @Test

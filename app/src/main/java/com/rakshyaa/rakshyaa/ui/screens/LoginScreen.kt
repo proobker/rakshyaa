@@ -43,6 +43,9 @@ fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val state by viewModel.authState.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = generateSequence(context) { (it as? android.content.ContextWrapper)?.baseContext }
+        .filterIsInstance<android.app.Activity>().firstOrNull()
 
     Column(
         modifier = Modifier
@@ -88,8 +91,8 @@ fun LoginScreen(
         }
         Spacer(Modifier.height(24.dp))
         if (com.rakshyaa.rakshyaa.BuildConfig.CLOUD_ENABLED) Button(
-            onClick = { viewModel.signInWithGoogle() },
-            enabled = !state.inProgress,
+            onClick = { activity?.let(viewModel::signInWithGoogle) },
+            enabled = !state.inProgress && activity != null,
             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
         ) {
             if (state.inProgress) {
