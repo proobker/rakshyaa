@@ -1,130 +1,44 @@
-# Rakshyaa Rebuild Milestone — Implementation Summary (v1.1)
+# Historical rebuild milestone
 
-## Overview
-This document summarizes the complete rewrite of the Rakshyaa Android app and backend, completed September 2026. All Supabase references removed; self-hosted backend + Google Credential Manager auth now verified end-to-end.
+This is historical context for the September 2026 rebuild. It is not a current
+setup guide, deployment status, or certification of every feature.
 
----
+## Earlier rebuild
 
-## What Was Rewritten
+Earlier project notes recorded replacement of stale Supabase-oriented code with
+Kotlin/Compose/Hilt repositories, device-bound encrypted storage, Google Credential
+Manager sign-in, and a Node/Express/SQLite backend. They reported emulator
+authentication and APK/test success in that development environment.
 
-### Android App (`rakshyaa/`)
-| Area | Changes |
-|------|---------|
-| **Auth** | Google sign-in via Credential Manager (`GetGoogleIdOption` + web client ID). `AuthViewModel`, `GoogleAuthClient`, `AuthRepository` all rewritten. LoginScreen + HomeScreen working. |
-| **Services (10 total)** | 4 manifest `@AndroidEntryPoint` foreground services (SOS, Location, Ride, CheckIn) + 6 helper `@Singleton` (VideoEncryption, EmergencyContacts, FakeCall, LegalHelp, SafePlaces, Geocoding). All wired to real repositories. |
-| **Repositories** | LocationRepository (encrypted local log), VideoRepository (AES-256-GCM + SyncManager), plus contacts, rides, check-ins, incidents, legal, safe places — all using real APIs. |
-| **Models** | `LocationRecord`, `VideoRecord` added. |
-| **UI** | `LoginScreen` (Google-only), `HomeScreen` (dashboard; sign-out now on Profile), `MainActivity` (switches Login/Home on auth state). Removed broken: `SignupScreen`, `ProfileSetupScreen`, `SOSScreen`, `LocationPermissionsHelper`, `VideoCaptureUtil`. All feature screens restored afterward (SOS, tracking, rides, check-ins, contacts, video, safe places, legal, fake call, profile). |
-| **Utils** | `GeoUtils` fixed (no nested companion object; pre-API-33 `Location` ctor). `CryptoManager` / `SecurePreferences` / `EncryptedLocalStore` intact. |
-| **Config** | `backend.properties` → `BuildConfig.BACKEND_BASE_URL` + `GOOGLE_WEB_CLIENT_ID`. `network_security_config.xml` for cleartext dev (`10.0.2.2`). |
-| **Deps** | Added `androidx.hilt:hilt-navigation-compose:1.2.0` for `hiltViewModel()`. |
+That implementation introduced the four manifest services and six injected
+helpers, the backend-token exchange, account feature repositories, and restored
+feature screens. Restore-on-login orchestration was placed in AuthViewModel to
+avoid the AuthRepository/AppDataSync/ProfileRepository dependency cycle.
 
-### Backend (`backend/`)
-| Area | Changes |
-|------|---------|
-| **Framework** | Express 4 + TypeScript (NodeNext), `node:sqlite` (`DatabaseSync`), no `better-sqlite3`. |
-| **Auth** | `google-auth-library` verifies Google ID token (audience = Web client ID); issues session JWT (`jsonwebtoken`). |
-| **Endpoints** | `GET /health`, `POST /auth/google`, auth-protected backup/media/incidents, API-key `/incidents/admin/active`. |
-| **Storage** | SQLite tables: `users`, `blobs` (encrypted-blob metadata), `incidents`. Files on disk under `backend/data/media/<userId>/`. |
-| **Security** | Server never decrypts blobs; only verifies ID tokens and issues JWTs. |
+## Subsequent source changes
 
----
+The reviewed checkout now has:
 
-## Verified End-to-End Flow (Sep 2026)
+- Local-device login and optional cloud mode.
+- Hono on Cloudflare Workers, D1 migrations, jose, and authenticated Cloudinary
+  ciphertext chunks as the active backend.
+- Account-scoped local files, account-generation sessions, and confirmed deletion.
+- API 36 targeting, current signing validation, and debug-only cleartext exceptions.
+- Explicit SMS composition/dialer actions rather than automatic emergency calls.
+- SOS countdown cancellation coverage and an in-memory-key operator dashboard.
 
-1. **Emulator**: `Medium_Phone_API_36.1` (google_apis_playstore, API 36).
-2. **Google account**: Test user added on OAuth consent screen.
-3. **OAuth clients**:
-   - Web: `765590596814-68hll5uflj7b4h9u8r9vlgrgiqvg4amu.apps.googleusercontent.com`
-   - Android: package `com.rakshyaa.rakshyaa` + SHA-1 `0F:2E:8A:D0:82:3D:7D:A5:C8:BF:15:0E:5A:2B:BA:FB:9F:E5:AE:01`
-4. **Config**:
-   - `rakshyaa/backend.properties`: `BACKEND_BASE_URL=http://10.0.2.2:8080` + Web client ID
-   - `backend/.env`: same Web client ID + `JWT_SECRET`
-5. **Result**: App launches → **Sign in with Google** → account chooser → ID token → backend `POST /auth/google` → session JWT → **Home** screen.
+## Historical verification limits
 
----
+The previous release report described signed APK/AAB generation, signature and
+alignment checks, local-login/emulator smoke tests, and a custom-domain DNS failure
+during Google release testing. It also referenced local signing material and
+`release-qa/` evidence outside the maintained documentation set.
 
-## Service Architecture (Final)
+Those reports are not rerun by editing documentation, and their old test/lint
+totals are not current acceptance evidence. Developer-specific OAuth IDs,
+fingerprints, AVD settings, and artifact hashes must be derived from the intended
+environment/artifact rather than copied from a historical note.
 
-| Type | Services | DI Pattern |
-|------|----------|------------|
-| **Manifest-registered** (4) | SOSActivationService, LocationTrackingService, RideMonitoringService, CheckInService | `@AndroidEntryPoint` + `@Inject lateinit var` field injection |
-| **Helper** (6) | VideoEncryptionService, EmergencyContactsService, FakeCallService, LegalHelpService, SafePlacesService, GeocodingService | Plain `@Singleton` + `javax.inject` constructor injection |
-
-**Rule**: Do NOT add new manifest services without `@AndroidEntryPoint` + field injection. Do NOT use `hiltService` or `SupabaseProvider` (stale).
-
----
-
-## Key Fixes During Build Iteration
-
-| Issue | Fix |
-|-------|-----|
-| `removeRange` not on List | `logs.takeLast(500)` |
-| `scope.cancel()` unresolved | Added `import kotlinx.coroutines.cancel` |
-| `emergencyNumbers` unresolved | Switched to hardcoded `tel:112` in `SOSActivationService.makeEmergencyCall()` |
-| `AudioAttributes` overload on `setSound` | Simplified to `.setSound(alarmUri)` |
-| `GCMParameterSpec` missing in decrypt | Added import; wrapped IV in `GCMParameterSpec(128, iv)` in both `VideoEncryptionService` decrypt paths |
-| `GeoUtils` nested companion object | Moved `EARTH_RADIUS_M` to object body |
-| `Location("", lat, lon, 0f)` pre-API-33 | Replaced with `Location("")` + `setLatitude`/`setLongitude` |
-| `GOOGLE_WEB_CLIENT_ID` mismatch | Fixed: Web client ID in both `backend.properties` and `.env` (was Android client ID in app) |
-| Cleartext HTTP blocked | Added `network_security_config.xml` allowing `10.0.2.2` + `localhost` |
-| `developer console isn't setup properly` (28444) | Created Android OAuth client in console; waited for propagation |
-| `getCredentialAsync no provider dependencies found` | Used google_apis_playstore AVD + signed-in Google account |
-| Location "grant" button crash | Permission checked before `startForeground` in Location/Ride services; screen two-step permission flow (FINE → BACKGROUND) |
-| Android 14 check-in crash (`MissingForegroundServiceTypeException`) | Added `foregroundServiceType="specialUse"` + property + `FOREGROUND_SERVICE_SPECIAL_USE` to CheckInService |
-| CameraX `outputResults.outputFile` unresolved | Use `outputUri.path` → `File` (CameraX 1.3.x) |
-| Restore-on-login didn't trigger | Move `AppDataSync.restoreAll()` trigger from `AuthRepository` (Hilt cycle) to `AuthViewModel` init observing `isLoggedIn` |
-
----
-
-## Current App State (v1.1)
-
-**Verified working (Sep 2026)**:
-- Google sign-in → backend token exchange → Home screen
-- All 9 services compile, register in manifest
-- All repositories compile with real APIs
-- APK builds: `app/build/outputs/apk/debug/app-debug.apk`
-- Unit suite: `./gradlew test` green (47 tests, debug + release)
-
-**All feature screens restored & wired to real services/repositories**:
-
-| Screen | Backed by | Status |
-|--------|-----------|--------|
-| SOS | `SOSActivationService` + `SOSViewModel` + incidents API | wired/verified |
-| Location tracking | `LocationTrackingService` (two-step permission flow) | wired/verified |
-| Ride monitoring | `RideMonitoringService` + `RideRepository` (in-screen permission request) | wired/verified |
-| Check-ins | `CheckInService` + `CheckInRepository` (`specialUse` FGS) | wired/verified |
-| Emergency contacts | `EmergencyContactsService` | wired/verified |
-| Safe places | `SafePlacesService` | wired/verified |
-| Legal help | `LegalHelpService` | wired/verified |
-| Fake call | `FakeCallService` (delay slider + phase machine) | wired/verified |
-| Encrypted video | `VideoEncryptionService` + `VideoRepository` + CameraX cut-through | wired/verified |
-| Profile (More tab) | `ProfileRepository` + `GET/PUT /user/profile` (photo/bio, sign-out) | wired/verified |
-
-**Post-milestone fixes**:
-- **Permission crash**: all tracking/ride services check location permission **before**
-  `startForeground` and `stopSelf()` when denied.
-- **Android 14 check-in crash**: `foregroundServiceType="specialUse"` +
-  `FOREGROUND_SERVICE_SPECIAL_USE` + property added to `CheckInService`.
-- **Restore-on-login**: `data/sync/AppDataSync.kt` pulls remote blobs + profile on session
-  start (triggered from `AuthViewModel`; `AuthRepository` must NOT depend on `AppDataSync` —
-  it creates a Hilt cycle `AuthRepository → AppDataSync → ProfileRepository → AuthRepository`).
-- **CameraX API**: `Recorder` output resolved via `outputResults.outputUri` (no `outputFile`
-  property in CameraX 1.3.x).
-- **Stale tests removed/replaced**: all tests now target current APIs (Robolectric + Mockito
-  inline + Truth + coroutines-test).
-
----
-
-## Commands Reference
-
-```bash
-# Backend
-cd backend && npm run typecheck && npm run dev
-
-# Android
-cd rakshyaa
-./gradlew compileDebugKotlin
-./gradlew assembleDebug          # -> app/build/outputs/apk/debug/app-debug.apk
-adb install -r app-debug.apk
-```
+Use [release readiness](../../RELEASE_READINESS.md) for the audit's actual check
+results, [local setup](../LOCAL_SETUP.md) for reproducible instructions, and
+[known limitations](../../docs/KNOWN_LIMITATIONS.md) for source gaps.
