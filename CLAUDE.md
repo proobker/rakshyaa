@@ -4,8 +4,8 @@ Guidance for AI coding agents (Claude Code, opencode, etc.) working in this repo
 
 ## Project Overview
 
-**Rakshyaa** is a women's safety Android application. The backend is a self-hosted
-Node.js + TypeScript (Express) service. The app uses **Google sign-in (Credential
+**Rakshyaa** is a women's safety Android application. The production backend is a
+Cloudflare Worker using Hono, D1, and Cloudinary. The app uses **Google sign-in (Credential
 Manager)** whose ID token is verified by our own backend, which then issues its own
 session JWT. All sensitive app data is **encrypted on-device** (Android Keystore) and
 optionally backed up to the backend as **opaque encrypted blobs** — the server never
@@ -19,36 +19,31 @@ class, they are stale and should be removed.
 
 ```
 rakshyaa/     # Native Android app (Kotlin, Jetpack Compose, Hilt)
-backend/      # Node.js + TypeScript + Express + SQLite (own backend)
+backend/      # Cloudflare Worker + Hono + D1 + Cloudinary
 admin/        # Next.js admin portal (reads backend incidents via API key)
 ```
 
-## Backend (Node.js + TypeScript + Express)
+## Backend (Cloudflare Workers)
 
 Location: `backend/`
 
-- Framework: Express 4 + TypeScript (NodeNext modules).
-- **SQLite** via the built-in `node:sqlite` module (`DatabaseSync`). The package
-  `better-sqlite3` is intentionally NOT used (native build fails on Windows without
-  Visual Studio tooling).
-- `google-auth-library` verifies Google ID tokens (`verifyIdToken` with audience =
-  the configured web client id).
-- `jsonwebtoken` signs/verifies session JWTs.
-- Schema (`backend/src/db.ts`): `users`, `blobs` (encrypted-blob metadata),
-  `incidents`.
-- Encrypted media files stored under `backend/data/media/<userId>/`.
+- Framework: Hono + TypeScript on Cloudflare Workers.
+- D1 stores `users`, `blobs`, `blob_parts`, and `incidents`.
+- `jose` verifies Google ID tokens and signs/verifies session JWTs.
+- Cloudinary stores opaque encrypted objects in 8 MiB chunks; the Worker streams
+  chunks back through the existing backup API.
 
 ### Commands (run inside `backend/`)
 | Action | Command |
 | --- | --- |
 | Install deps | `npm install` |
-| Run (dev, watch) | `npm run dev` |
-| Typecheck | `npm run typecheck` (`tsc --noEmit`) |
-| Build | `npm run build` |
-| Run (built) | `npm start` |
+| Run locally | `npm run dev` |
+| Typecheck | `npm run typecheck` |
+| Test | `npm test` |
+| Deploy | `npm run deploy` |
 
-Environment: copy `.env.example` → `.env`. Requires `GOOGLE_WEB_CLIENT_ID`,
-`JWT_SECRET`, `ADMIN_API_KEY`. `DATA_DIR` and `DB_PATH` have sensible defaults.
+Environment: copy `.dev.vars.example` to `.dev.vars` locally. Production secrets
+are set with `wrangler secret put`; see `backend/README.md`.
 
 ### API surface
 - `GET /health`
