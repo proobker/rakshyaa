@@ -47,7 +47,23 @@ fun SOSButton(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    SOSButtonContent(uiState, onActivateClick, onDeactivateClick, viewModel::cancelSosActivation, modifier)
+}
+
+@Composable
+fun SOSButtonContent(
+    uiState: SOSViewModel.UiState,
+    onActivateClick: () -> Unit,
+    onDeactivateClick: () -> Unit,
+    onCancelClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     
+    if (uiState.isSosActivating) {
+        SOSCountdownOverlay(uiState.sosActivationCountdown, onCancelClick, modifier)
+        return
+    }
+
     val colors = MaterialTheme.colorScheme
     val primaryColor = colors.primary
     val errorColor = colors.error
@@ -72,11 +88,6 @@ fun SOSButton(
         else tween(durationMillis = 300)
     )
     
-    val contentAlpha by animateFloatAsState(
-        targetValue = if (uiState.isSosActivating) 0.5f else 1.0f,
-        animationSpec = tween(durationMillis = 300)
-    )
-
     val buttonDiameter = 140.dp
     val iconSize = 48.dp
 
@@ -103,15 +114,9 @@ fun SOSButton(
             )
         }
         
-        // Countdown overlay
-        if (uiState.isSosActivating) {
-            SOSCountdownOverlay(countdown = uiState.sosActivationCountdown)
-        }
-        
         // Main button
         Button(
             onClick = if (uiState.isSosActive) onDeactivateClick else onActivateClick,
-            enabled = !uiState.isSosActivating,
             colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                 containerColor = buttonColor,
                 contentColor = if (uiState.isSosActive) onError else onPrimary
@@ -119,7 +124,7 @@ fun SOSButton(
             shape = CircleShape,
             modifier = Modifier
                 .size(buttonDiameter)
-                .alpha(contentAlpha)
+
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -155,39 +160,27 @@ fun SOSButton(
 }
 
 @Composable
-fun SOSCountdownOverlay(countdown: Int) {
+fun SOSCountdownOverlay(countdown: Int, onCancel: () -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    val textColor = colors.onSurface
-    
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colors.surface.copy(alpha = 0.9f))
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "ACTIVATING IN",
-                color = textColor.copy(alpha = 0.7f),
-                fontSize = 16.sp,
-                letterSpacing = 1.5.sp
-            )
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = countdown.toString(),
-                color = colors.error,
-                fontSize = 96.sp,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
-            )
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Tap anywhere to cancel",
-                color = textColor.copy(alpha = 0.5f),
-                fontSize = 14.sp
-            )
+        Text(
+            text = androidx.compose.ui.res.stringResource(com.rakshyaa.rakshyaa.R.string.sos_countdown_label),
+            color = colors.onSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge
+        )
+        Text(
+            text = countdown.toString(),
+            color = colors.error,
+            fontSize = 64.sp,
+            lineHeight = 72.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
+        )
+        androidx.compose.material3.OutlinedButton(onClick = onCancel) {
+            Text(androidx.compose.ui.res.stringResource(com.rakshyaa.rakshyaa.R.string.sos_cancel_activation))
         }
     }
 }

@@ -139,9 +139,9 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Default.Shield, contentDescription = null,
-                    tint = primaryColor, modifier = Modifier.size(40.dp)
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.brand_logo),
+                    contentDescription = null, modifier = Modifier.size(40.dp)
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.home_title), style = MaterialTheme.typography.headlineMedium)
