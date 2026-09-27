@@ -8,12 +8,12 @@ Use [testing](TESTING.md) to verify behavior before treating a feature as releas
 
 | Area | Source-backed limitation | Consequence |
 | --- | --- | --- |
-| Check-in startup | CheckInViewModel starts a foreground service with `ACTION_SCHEDULE_CHECK_IN`; that service branch starts a timer without calling the foreground-start branch. | Cold scheduling needs a device regression for foreground-service promotion. |
-| Check-in completion | The view model writes completed status directly; it does not notify the service's `isCheckedIn` flag. | The still-running timer can later mark the same record missed. |
-| Check-in cancellation | Cancelling clears service state but leaves the repository record pending. | UI history can retain a cancelled item as pending. |
-| Check-in delivery | The missed-check-in branch posts a local notification if a contact exists; no message is sent to that contact. | Its “contact has been notified” text is not evidence of delivery. |
+| Check-in startup | Scheduled check-ins now promote the service to the foreground before starting the timer. | Cold start, process death, reboot, and background-restriction behavior still need device acceptance. |
+| Check-in completion | ViewModel completion now persists the completed record and signals the service. | Process death can still lose an in-memory timer before the scheduled event runs. |
+| Check-in cancellation | Cancellation now persists `cancelled` in the repository and clears service state. | Older pending records may need cleanup or reconciliation. |
+| Check-in delivery | The missed-check-in branch posts a local notification; no message is sent automatically. | The user must open messaging or the dialer and complete the contact action. |
 | Check-in durability | Timer state is held in memory, with no persisted alarm or restart reconstruction. | Process death/reboot does not establish reliable scheduled execution. |
-| Incident delivery | IncidentRepository wraps cloud create/resolve calls in best-effort `runCatching`; no durable retry queue exists. | Local success can coexist with a missing or still-active cloud incident. |
+| Incident delivery | Cloud create/resolve calls now use three bounded retries with short backoff, but there is no durable retry or reconciliation queue. | Local success can still coexist with a missing or still-active cloud incident after all retries fail. |
 | Incident location | The cloud record receives initial coordinates only; SOS location polling writes the local history. | The operator location is not a live tracking feed. |
 | Ride deviation | RideRepository compares the newest point to earlier recorded points using a fixed 300 m threshold. The service has a separate configurable helper, unused by its GPS callback. | The slider/helper is not a proven planned-route alert system. |
 | Location lifecycle | Location/ride cleanup removes callbacks in explicit stop paths; `onDestroy()` only cancels coroutine scope. | Process/service lifecycle and denied/approximate permissions need physical-device tests. |
@@ -77,7 +77,8 @@ Source:
 - The missing `admin/.env.local` exclusion identified in the original audit was
   addressed on 2026-09-27 with root and component ignore rules. Verify staged
   files in the actual publication repository; already-tracked files stay tracked.
-- Android license text is MIT, backend package declares MIT, and admin declares ISC.
+- The repository and Android/backend/admin package manifests use MIT. Dependency
+  licenses remain governed by their own notices.
 
-These are follow-up implementation/documentation decisions, not changes performed
-during this Markdown-only audit. [PLAN.md](PLAN.md) orders the remaining work.
+These remain follow-up implementation and acceptance decisions. [PLAN.md](PLAN.md)
+orders the remaining work.

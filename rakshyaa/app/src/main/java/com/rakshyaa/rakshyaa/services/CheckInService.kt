@@ -63,9 +63,13 @@ class CheckInService : Service() {
             ACTION_SCHEDULE_CHECK_IN -> {
                 val id = intent.getStringExtra(EXTRA_CHECK_IN_ID) ?: return START_STICKY
                 val grace = intent.getIntExtra(EXTRA_GRACE_PERIOD_MIN, 5)
+                startCheckInService()
                 startCheckInTimer(id, grace)
             }
             ACTION_CANCEL_CHECK_IN -> {
+                intent.getStringExtra(EXTRA_CHECK_IN_ID)?.let { id ->
+                    scope.launch { checkInRepository.cancel(id) }
+                }
                 currentCheckInId = null
                 isCheckedIn = false
             }
@@ -146,7 +150,7 @@ class CheckInService : Service() {
             emergencyContactsRepository.getAll().firstOrNull()?.let {
                 sendNotification(
                     "Missed Safety Check-In",
-                    "You missed your check-in. Your emergency contact has been notified."
+                    "You missed your check-in. Open your messaging app to contact your emergency contact."
                 )
             }
         }

@@ -98,8 +98,8 @@ Cloudinary credentials in local private files/provider secret storage.
 
 The D1 database ID, backend origin, and OAuth client IDs are identifiers, not
 login credentials. Fork operators must replace environment-specific values.
-Preserve existing license texts/declarations; the Android/backend MIT and admin
-ISC declarations do not automatically establish a single project-wide license.
+The repository root and all three component manifests use MIT. Dependency
+licenses remain governed by their own notices.
 
 ## Source publication versus hosting
 

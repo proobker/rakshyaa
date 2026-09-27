@@ -35,7 +35,7 @@ data class CheckIn(
     val id: String = "",
     val scheduledAt: Long,
     val checkedInAt: Long? = null,
-    val status: String = "pending", // pending | completed | missed | escalated
+    val status: String = "pending", // pending | completed | missed | cancelled | escalated
     val latitude: Double? = null,
     val longitude: Double? = null
 )

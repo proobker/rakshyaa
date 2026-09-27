@@ -98,6 +98,6 @@ presence is not evidence that a production deployment or every device flow works
 
 ## License
 
-The Android project includes an [MIT license](rakshyaa/LICENSE). The backend
-package declares MIT; the admin package declares ISC. These declarations should
-be reconciled before assigning a single license to the complete distribution.
+The repository is released under the [MIT License](LICENSE). The backend and
+admin package manifests use MIT; dependency licenses remain governed by their
+own notices.

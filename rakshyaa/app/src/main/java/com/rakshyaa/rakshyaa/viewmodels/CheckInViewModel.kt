@@ -61,6 +61,7 @@ class CheckInViewModel @Inject constructor(
     fun checkInNow(checkInId: String) {
         viewModelScope.launch {
             checkInRepository.complete(checkInId, null, null)
+            sendServiceAction(CheckInService.ACTION_CHECK_IN_NOW, checkInId)
             loadCheckIns()
         }
     }
@@ -68,11 +69,21 @@ class CheckInViewModel @Inject constructor(
     fun cancelCheckIn(checkInId: String) {
         val intent = Intent(context, CheckInService::class.java).apply {
             action = CheckInService.ACTION_CANCEL_CHECK_IN
+            putExtra(CheckInService.EXTRA_CHECK_IN_ID, checkInId)
         }
         runCatching { context.startService(intent) }
         viewModelScope.launch {
+            checkInRepository.cancel(checkInId)
             loadCheckIns()
         }
+    }
+
+    private fun sendServiceAction(action: String, checkInId: String) {
+        val intent = Intent(context, CheckInService::class.java).apply {
+            this.action = action
+            putExtra(CheckInService.EXTRA_CHECK_IN_ID, checkInId)
+        }
+        runCatching { context.startService(intent) }
     }
 
     private fun startCheckInService(checkInId: String, graceMin: Int) {

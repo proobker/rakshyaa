@@ -52,6 +52,10 @@ class CheckInRepository @Inject constructor(
         }
     }
 
+    suspend fun cancel(id: String) {
+        modify { list -> list.map { if (it.id == id) it.copy(status = "cancelled") else it } }
+    }
+
     suspend fun escalate(id: String) {
         modify { list ->
             list.map { if (it.id == id) it.copy(status = "escalated") else it }

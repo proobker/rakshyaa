@@ -10,6 +10,7 @@ import kotlinx.serialization.json.Json
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.delay
 
 /**
  * Manages SOS incidents: stored locally (encrypted) and additionally reported to
@@ -46,8 +47,8 @@ class IncidentRepository @Inject constructor(
 
         if (store.accountId == "local-device") return incident
 
-        // Report to backend so admin can see active emergencies (best-effort).
-        runCatching {
+        // Report to backend with bounded retries; local SOS remains usable offline.
+        retryCloudWrite {
             val body = Json.encodeToString(
                 IncidentRequest.serializer(),
                 IncidentRequest(
@@ -67,6 +68,16 @@ class IncidentRepository @Inject constructor(
         modify { list ->
             list.map { if (it.id == id) it.copy(status = "resolved") else it }
         }
-        if (store.accountId != "local-device") runCatching { apiClient.postJson("/incidents/$id/resolve", "{}") }
+        if (store.accountId != "local-device") {
+            retryCloudWrite { apiClient.postJson("/incidents/$id/resolve", "{}") }
+        }
+    }
+
+    private suspend fun retryCloudWrite(write: suspend () -> Unit) {
+        repeat(3) { attempt ->
+            val result = runCatching { write() }
+            if (result.isSuccess) return
+            if (attempt < 2) delay((attempt + 1) * 750L)
+        }
     }
 }

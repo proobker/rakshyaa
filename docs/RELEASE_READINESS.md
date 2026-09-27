@@ -1,5 +1,20 @@
 # Release readiness
 
+## Implementation update - 2026-09-27
+
+The current source includes bounded safety fixes: scheduled check-ins promote
+the service to the foreground before starting their timer, completion and
+cancellation persist repository state, and missed-check-in copy now describes
+the user action required to contact someone. Cloud incident create/resolve
+writes retry three times with short backoff while preserving local success when
+the network remains unavailable. The repository, Android, backend, and admin
+package declarations now use the root MIT license.
+
+These changes reduce known failure modes but do not close the production gate.
+Physical-device recovery, signed artifact verification, real Google OAuth,
+Cloudinary and D1 acceptance, accessibility review, and durable reconciliation
+for incidents still require evidence before public release.
+
 ## Repository publication checks - 2026-09-27
 
 The source was organized into one repository containing Android, backend, admin,
