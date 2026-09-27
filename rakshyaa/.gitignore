@@ -1,0 +1,19 @@
+local.properties
+supabase.properties
+backend.properties
+.gradle/
+.gradle/8.7/
+.kotlin/
+.claude/
+build/
+app/build/
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+
+
+# Private signing material; never commit.
+.release/

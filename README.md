@@ -1,98 +1,103 @@
-# Rakshyaa Android app
+# Rakshyaa
 
-A Kotlin/Jetpack Compose app for local safety records and optional cloud services.
-Build from this directory; the workspace root is not the Android Gradle project.
+Rakshyaa is a native Android women's-safety app with optional cloud services and
+an operator dashboard. The default build supports **Continue on this device**
+without Google sign-in or a backend. Cloud mode adds Google authentication,
+encrypted backups, profile synchronization, incident reporting, and nearby-place lookup.
 
-## Build configuration
+## Components
 
-The checked-in configuration is:
+| Directory | Implementation | Entry point |
+| --- | --- | --- |
+| [Android](rakshyaa/README.md) | Kotlin, Jetpack Compose, Hilt, Android Keystore | `rakshyaa/app/src/main/java/com/rakshyaa/rakshyaa/ui/MainActivity.kt` |
+| [Backend](backend/README.md) | Cloudflare Workers, Hono, D1, Cloudinary, jose | `backend/src/worker/index.ts` |
+| [Admin](admin/README.md) | Next.js Pages Router, React, TypeScript | `admin/pages/index.tsx` |
 
-| Setting | Value |
-| --- | --- |
-| Application ID / namespace | `com.rakshyaa.rakshyaa` |
-| Version name / code | 1.1 / 2 |
-| Minimum / compile / target SDK | 24 / 36 / 36 |
-| Android Gradle Plugin / Gradle wrapper | 8.10.1 / 8.11.1 |
-| Kotlin / Hilt | 2.0.20 / 2.52 |
-| Compose BOM / CameraX | 2024.08.00 / 1.4.2 |
-| Java/Kotlin target | 17 |
-| Cloud default | Disabled |
+The inactive Express/filesystem implementation is archived under
+[backend/legacy](backend/legacy/README.md). Current package scripts build and run the Worker.
+There is no active Supabase integration.
 
-Sources: [app/build.gradle](app/build.gradle), [build.gradle](build.gradle), and
-[Gradle wrapper properties](gradle/wrapper/gradle-wrapper.properties).
-Ignored `backend.properties` may override local build settings.
+## Repository layout
+
+This repository contains all three components and preserves the Android Git
+history. Open [rakshyaa.code-workspace](rakshyaa.code-workspace) in VS Code for
+one Source Control root. Open the inner `rakshyaa/` directory in Android Studio.
+
+```text
+rakshyaa/        Android Gradle project
+backend/        Cloudflare Worker, migrations, tests, and legacy archive
+admin/          Next.js operator portal
+docs/           Single documentation hub, including release and setup guides
+assets/         Branding artwork
+```
+
+## Start with the Android app
+
+Use JDK 17 and an Android SDK with platform 36. Open `rakshyaa/` as the Gradle
+project in Android Studio, or run from that directory:
 
 ```powershell
 .\gradlew.bat assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Use [LOCAL_SETUP.md](LOCAL_SETUP.md) for prerequisites, local mode, and optional
-Google/Worker configuration. On POSIX, replace `.\gradlew.bat` with `./gradlew`.
+On macOS/Linux, use `./gradlew` instead of `.\gradlew.bat`. Set the SDK location
+through Android Studio or ignored `local.properties`. No backend properties are
+needed for the default local build. Choose **Continue on this device** at launch.
 
-## Feature map
+For cloud mode, follow [local setup](docs/ANDROID_SETUP.md). It requires
+`ENABLE_CLOUD=true`, a reachable backend, and matching Google Web client IDs.
+Wrangler development normally uses port 8787; the guides set it explicitly.
+Ignored local configuration can override the repository defaults.
 
-| Feature | Current implementation |
+## What the app does
+
+- SOS countdown and foreground service, with separate SMS preparation and dialer actions.
+- Encrypted contact lists, location history, ride records, check-in records, and videos.
+- Fake-call simulation, saved places, and bundled legal-resource text.
+- Profile editing, local session management, and installation-wide local data deletion.
+- Optional encrypted backup and cloud incident reporting.
+- Manual operator review of the latest 50 active cloud incidents.
+
+SMS and calls require user action in the external app. Backend incident creation
+does not establish that an operator saw an alert or dispatched help. Check-ins,
+ride deviation, and sample place/resource data have
+[known implementation limitations](docs/KNOWN_LIMITATIONS.md).
+
+## Data boundaries
+
+Local datastores and saved media use device-bound encryption. Backup payloads
+remain ciphertext on the server, but profiles, incident coordinates/timestamps,
+and backup metadata are readable by the backend. Nearby lookup sends coordinates
+to the Worker and Overpass. Map and geocoding features may use network services
+even in local mode.
+
+Losing the installation's encryption keys makes its backup ciphertext unreadable.
+Reinstall and cross-device recovery are not implemented. See
+[security and data handling](docs/SECURITY.md).
+
+## Documentation and validation
+
+For publishing the backend and portal on GitHub, hosting your own backend, and
+creating a signed Android release, start with the [documentation hub](docs/README.md).
+It also includes the [technology inventory](docs/TECHNOLOGY_STACK.md), configuration,
+operations, and troubleshooting guides.
+
+The [documentation index](docs/README.md) links setup, architecture, API, testing,
+deployment, release, and known-limitations guides. Run commands from the stated
+component directory:
+
+| Component | Checks |
 | --- | --- |
-| Login | Local-device session; Google sign-in shown when cloud is enabled |
-| Home/navigation | Compose dashboard, bottom tabs, feature routes |
-| SOS | Cancellable countdown, foreground runtime state, local incident and optional cloud report |
-| Emergency actions | Prepare SMS for up to five valid distinct contacts; open unnumbered dialer |
-| Contacts | Encrypted CRUD and primary-contact selection |
-| Location | Foreground GPS logging, recent history, one-shot location with stored fallback |
-| Rides | Start/end records and GPS points; deviation heuristic has limitations |
-| Check-ins | Pending/completed/missed records and service timer; lifecycle/delivery gaps remain |
-| Safe places | Saved entries, optional Overpass-backed lookup, bundled sample fallback |
-| Legal resources | Bundled text and user-added notes |
-| Fake call | Delayed simulated incoming/connected call with ringtone/vibration |
-| Video | CameraX capture, encrypted local media, optional best-effort cloud upload |
-| Profile | Local or remote text editing, cloud photo upload, settings, sign-out, deletion |
+| Android: `rakshyaa/` | `.\gradlew.bat test compileDebugKotlin lintDebug lintRelease` |
+| Backend: `backend/` | `npm run typecheck`, `npm test`, `npx wrangler deploy --dry-run` |
+| Admin: `admin/` | `npm run typecheck`, `npm run build` |
 
-Feature presence does not certify reliable emergency delivery. See
-[known limitations](../docs/KNOWN_LIMITATIONS.md), especially check-ins, ride deviation,
-sample locations/resources, and cloud media lifecycle.
+See [release readiness](docs/RELEASE_READINESS.md) for verification scope; current source
+presence is not evidence that a production deployment or every device flow works.
 
-## Source map
+## License
 
-Paths below are relative to `app/src/main/java/com/rakshyaa/rakshyaa/`.
-
-| Path | Responsibility |
-| --- | --- |
-| `RakshyaaApplication.kt`, `di/` | Hilt application and location-provider binding |
-| `ui/MainActivity.kt`, `ui/navigation/` | Session gate, scaffold, feature routes |
-| `ui/screens/`, `ui/components/`, `ui/theme/` | Compose screens, emergency intents, theme |
-| `viewmodels/` | UI state and orchestration |
-| `data/auth/`, `data/network/` | Sessions, Google exchange, account deletion, API client/DTOs |
-| `data/local/`, `utils/CryptoManager.kt` | Account-scoped encrypted storage and preferences |
-| `data/models/`, `data/repositories/` | Serialized records and feature persistence |
-| `data/sync/` | Backup upload, authenticated restore, login orchestration |
-| `services/` | Four manifest services and six injected helpers |
-| `utils/GeoUtils.kt` | Distance calculations |
-
-The [manifest](app/src/main/AndroidManifest.xml) registers SOS, location tracking,
-ride monitoring, and check-in services. Helper classes such as FakeCallService
-are not manifest services.
-
-## Persistence and privacy
-
-App files are scoped by account ID. Logout keeps saved files, while account/data
-deletion clears all local application data. Backups use device-bound keys and
-cannot recover encrypted content after losing the original installation's keys.
-
-Cloud profiles and incidents are readable by the backend; encrypted backups are
-a separate channel. Detailed behavior is in [architecture](../docs/ARCHITECTURE.md)
-and [security](../docs/SECURITY.md).
-
-## Verification and release
-
-```powershell
-.\gradlew.bat test compileDebugKotlin lintDebug lintRelease
-```
-
-Run `connectedDebugAndroidTest` with a configured device for instrumentation.
-See [testing](../docs/TESTING.md), [release process](../RELEASE.md), and
-[Google release configuration](GOOGLE_RELEASE.md). Production signing is already
-wired through ignored signing properties or environment variables.
-
-For contributor constraints, read [CLAUDE.md](CLAUDE.md) and the root
-[AGENTS.md](../AGENTS.md). The Android license is [MIT](LICENSE).
+The Android project includes an [MIT license](rakshyaa/LICENSE). The backend
+package declares MIT; the admin package declares ISC. These declarations should
+be reconciled before assigning a single license to the complete distribution.

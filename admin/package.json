@@ -1,0 +1,29 @@
+{
+  "name": "admin",
+  "version": "1.0.0",
+  "description": "Admin portal for Rakshyaa women's safety application",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "rakshyaa",
+    "admin",
+    "nextjs"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "next": "^16.3.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "typescript": "^7.0.2"
+  }
+}

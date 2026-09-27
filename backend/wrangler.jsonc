@@ -1,0 +1,35 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "rakshyaa-backend",
+  "main": "src/worker/index.ts",
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [{ "pattern": "rakshya.rabidahal.com.np", "custom_domain": true }],
+	"compatibility_date": "2026-09-26",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "rakshyaa-db",
+			"database_id": "a722d1c4-7a25-46aa-8e10-0b02f0425b81"
+		}
+	],
+	"vars": {
+		"JWT_EXPIRY_SECONDS": "2592000",
+		"OVERPASS_URL": "https://overpass-api.de/api/interpreter",
+		"SUPPORT_EMAIL": ""
+	},
+	"observability": {
+		"enabled": true,
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 1
+		},
+		"traces": {
+			"enabled": true,
+			"head_sampling_rate": 0.01
+		}
+	}
+}

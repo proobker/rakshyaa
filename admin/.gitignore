@@ -1,0 +1,13 @@
+# Local credentials and environment overrides. Keep the public template.
+.env
+.env.*
+!.env.example
+
+# Dependencies and generated Next.js/TypeScript files.
+node_modules/
+.next/
+out/
+.vercel/
+next-env.d.ts
+*.tsbuildinfo
+*.log

@@ -1,19 +1,51 @@
-local.properties
-supabase.properties
+# Private configuration and signing material; commit examples only.
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
 backend.properties
-.gradle/
-.gradle/8.7/
-.kotlin/
-.claude/
+local.properties
+.release/
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.key
+
+# Dependencies, build output, caches and local databases.
+node_modules/
 build/
-app/build/
-*.iml
-.idea/
+dist/
+out/
+.next/
+.vercel/
+.wrangler/
+.gradle/
+.kotlin/
+*.tsbuildinfo
+*.log
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+backend/data/
+admin/next-env.d.ts
+rakshyaa/app/release/
+rakshyaa/*.json
 captures/
 .externalNativeBuild/
 .cxx/
 
-
-
-# Private signing material; never commit.
-.release/
+# Local editor and operating-system state.
+.idea/
+.claude/
+*.iml
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+*.orig
+*.bak

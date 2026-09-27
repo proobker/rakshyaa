@@ -1,0 +1,7 @@
+# Copy to .dev.vars for `npm run dev`. Never commit .dev.vars.
+GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
+JWT_SECRET=replace-with-at-least-32-random-characters
+ADMIN_API_KEY=replace-with-at-least-32-random-characters
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret

@@ -1,0 +1,36 @@
+{
+  "name": "rakshyaa-backend",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Cloudflare Workers backend for the Rakshyaa women's safety app.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "cf-typegen": "wrangler types",
+    "db:migrate:local": "wrangler d1 migrations apply rakshyaa-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply rakshyaa-db --remote"
+  },
+  "keywords": [
+    "rakshyaa",
+    "safety",
+    "oauth",
+    "backend"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "hono": "^4.9.8",
+    "jose": "^6.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.0.0",
+    "@msw/cloudflare": "^0.1.0",
+    "@types/node": "^26.6.3",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.0",
+    "msw": "^2.14.0",
+    "wrangler": "^4.40.2"
+  }
+}
