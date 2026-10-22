@@ -43,6 +43,8 @@ short entry points beside their source.
 | [Release process](RELEASE.md) | Release decisions, checks, and evidence |
 | [Release readiness](RELEASE_READINESS.md) | Actual validation results and unverified acceptance work |
 | [Release notes](RELEASE_NOTES.md) | Changes represented by the source |
+| [Play Store listing](PLAY_STORE_LISTING.md) | Draft store text, data safety answers, and listing blockers |
+| [Location declaration](PLAY_LOCATION_DECLARATION.md) | Draft permission answers, recording sequence, and current blockers |
 | [Follow-up plan](PLAN.md) | Remaining work and completion criteria |
 | [Historical rebuild milestone](archive/REBUILD_MILESTONE.md) | Historical context, not current setup instructions |
 

@@ -1,5 +1,49 @@
 # Release readiness
 
+## Launch review - 2026-10-09
+
+Source revision `5240d7a`. Status: **not ready for public launch.**
+
+| Check | Result and scope |
+| --- | --- |
+| Backend `npm run typecheck` | Passed |
+| Backend `npm test` | Passed: 5 Worker tests; external storage mocked |
+| Backend `npx wrangler deploy --dry-run` | Passed; nothing deployed. `SUPPORT_EMAIL` is empty |
+| Admin `npm run typecheck`, `npm run build` | Passed |
+| Android `test compileDebugKotlin lintDebug lintRelease` | Passed; Gradle reused up-to-date results: 55 release unit tests, 0 failures; lint 0 errors, 110 warnings |
+| Production `GET /health` | HTTP 200 from the configured cloud `BACKEND_BASE_URL` |
+| Existing `app-release.apk` | v2 signature verifies; `zipalign -c -P 16 4` passes; built 2026-09-26 |
+
+### Rebuilt artifacts - 2026-10-09
+
+The 2026-09-26 artifacts predated `5240d7a`. They were rebuilt from `5240d7a`
+with `assembleDebug assembleRelease bundleRelease`. Version 1.1 / code 2,
+`CLOUD_ENABLED=true`, build tools 36.1.0.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `app-release.apk` | `b887bfb348572c2420d2a0515abd9661237144722502cc87e63a5d932231a89e` |
+| `app-release.aab` | `fd3d052b2779ef8b6ef18b08df685937dc812ebe5ef962eb4edba2e769784385` |
+
+- APK: `apksigner` verifies (v2), signer `CN=Rakshyaa Upload`, certificate SHA-256
+  `e85286e4044bc18b53792d515d8b9dbd13c15c89a12b3df27160bcfe2d437ef0`.
+- APK: `zipalign -c -P 16 4` passes. The arm64-v8a and x86_64 CameraX native
+  libraries have `2**14` (16 KB) LOAD segment alignment.
+- AAB: `jarsigner -verify` reports "jar verified".
+- The rebuilt APK has not been installed or run on a device.
+
+Blockers:
+
+1. If version code 2 was already distributed, increment `versionCode`
+   before shipping these fixes as an update.
+2. Acceptance items 2–5 below have no recorded results: physical devices,
+   restore and deletion, accessibility, and real OAuth/D1/Cloudinary.
+3. `SUPPORT_EMAIL` is empty in `backend/wrangler.jsonc`. A deployed dashboard
+   value was not checked. Public privacy, support, and retention materials are
+   not in place.
+4. Check-in timers do not survive process death or reboot. Release copy must
+   not present check-in as a reliable safety alert.
+
 ## Implementation update - 2026-09-27
 
 The current source includes bounded safety fixes: scheduled check-ins promote

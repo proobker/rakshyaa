@@ -1,11 +1,8 @@
 package com.rakshyaa.rakshyaa.ui.screens
 
 import android.Manifest
-import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
@@ -38,6 +35,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import com.rakshyaa.rakshyaa.ui.components.LocationDisclosureDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +55,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rakshyaa.rakshyaa.R
@@ -68,7 +74,16 @@ fun LocationTrackingScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val activity = remember { context as ComponentActivity }
+    var disclosureAction by rememberSaveable { mutableStateOf<String?>(null) }
+    var showBackgroundExplanation by rememberSaveable { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshState()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val backgroundPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -86,11 +101,57 @@ fun LocationTrackingScreen(
         if (fine && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
         ) {
-            backgroundPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION))
+            showBackgroundExplanation = true
         }
     }
 
     val hasPermissions = uiState.hasFineLocationPermission && uiState.hasBackgroundLocationPermission
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { viewModel.startTracking() }
+
+    if (disclosureAction != null) {
+        LocationDisclosureDialog(
+            onDismiss = { disclosureAction = null },
+            onAgree = {
+                val action = disclosureAction
+                disclosureAction = null
+                when {
+                    action == "settings" -> viewModel.openAppSettings()
+                    !uiState.hasFineLocationPermission -> viewModel.requestFineLocation(permissionLauncher)
+                    !uiState.hasBackgroundLocationPermission -> showBackgroundExplanation = true
+                    action == "start" -> {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                        ) notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        else viewModel.startTracking()
+                    }
+                }
+            }
+        )
+    }
+    if (showBackgroundExplanation && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val optionLabel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            context.packageManager.backgroundPermissionOptionLabel.toString()
+        } else "Allow all the time"
+        AlertDialog(
+            onDismissRequest = { showBackgroundExplanation = false },
+            title = { Text(stringResource(com.rakshyaa.rakshyaa.R.string.tracking_background_title)) },
+            text = { Text(stringResource(com.rakshyaa.rakshyaa.R.string.tracking_background_message, optionLabel)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showBackgroundExplanation = false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) viewModel.openAppSettings()
+                    else backgroundPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION))
+                }) { Text(stringResource(com.rakshyaa.rakshyaa.R.string.open_settings)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBackgroundExplanation = false }) {
+                    Text(stringResource(com.rakshyaa.rakshyaa.R.string.location_disclosure_decline))
+                }
+            }
+        )
+    }
 
     val scrollState = rememberScrollState()
     val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
@@ -168,7 +229,7 @@ fun LocationTrackingScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Button(
-                            onClick = { viewModel.requestFineLocation(permissionLauncher) },
+                            onClick = { disclosureAction = "permission" },
                             modifier = Modifier.weight(1f),
                             colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error,
@@ -177,19 +238,9 @@ fun LocationTrackingScreen(
                         ) {
                             Text(stringResource(R.string.grant_permission))
                         }
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            val shouldShowRationale = remember {
-                                ActivityCompat.shouldShowRequestPermissionRationale(
-                                    activity,
-                                    Manifest.permission.ACCESS_FINE_LOCATION
-                                ) || ActivityCompat.shouldShowRequestPermissionRationale(
-                                    activity,
-                                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                                )
-                            }
-                            if (!shouldShowRationale && !hasPermissions) {
+                        if (!hasPermissions) {
                                 Button(
-                                    onClick = { viewModel.openAppSettings() },
+                                    onClick = { disclosureAction = "settings" },
                                     modifier = Modifier.weight(1f),
                                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -198,11 +249,14 @@ fun LocationTrackingScreen(
                                 ) {
                                     Text(stringResource(R.string.open_settings))
                                 }
-                            }
                         }
                     }
                 }
             }
+        }
+
+        uiState.error?.let { message ->
+            Text(text = message, color = MaterialTheme.colorScheme.error)
         }
 
         // Location Header
@@ -277,7 +331,7 @@ fun LocationTrackingScreen(
         LocationTrackingButton(
             isTracking = uiState.isTracking,
             hasPermissions = hasPermissions,
-            onStartClick = { viewModel.startTracking() },
+            onStartClick = { disclosureAction = "start" },
             onStopClick = { viewModel.stopTracking() }
         )
 

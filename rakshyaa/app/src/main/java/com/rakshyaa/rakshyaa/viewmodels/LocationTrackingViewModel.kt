@@ -70,6 +70,7 @@ class LocationTrackingViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     hasFineLocationPermission = fine,
                     hasBackgroundLocationPermission = bg,
+                    error = if (fine) null else _uiState.value.error,
                     lastLocation = last,
                     locationHistory = resolved,
                     placeName = last?.placeName
@@ -90,17 +91,13 @@ class LocationTrackingViewModel @Inject constructor(
         )
     }
 
-    /** Called after the FINE/COARSE request. Starts tracking once fine location is granted. */
+    /** Permission consent does not start a tracking session. */
     fun onFinePermissionResult(granted: Boolean) {
         _uiState.value = _uiState.value.copy(
             hasFineLocationPermission = granted,
-            error = if (!granted) "Location permission is required to track your location" else null
+            error = if (!granted) context.getString(com.rakshyaa.rakshyaa.R.string.tracking_precise_required) else null
         )
-        if (granted) {
-            startTracking()
-        } else {
-            refreshState()
-        }
+        refreshState()
     }
 
     /** Called after the separate ACCESS_BACKGROUND_LOCATION request (step 2, Android 10+). */

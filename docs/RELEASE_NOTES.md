@@ -1,5 +1,34 @@
 # Release notes
 
+## Safety hardening - 2026-09-27
+
+Android remains version 1.1 / version code 2 in source. The signed APK/AAB built
+on 2026-09-26 do not contain these changes. The artifacts rebuilt on 2026-10-09
+do; checksums are in [release readiness](RELEASE_READINESS.md).
+
+### Fixed
+
+- Scheduled check-ins promote `CheckInService` to the foreground before the
+  timer starts.
+- Completing a check-in persists the completed record and signals the service
+  to stop its timer.
+- Cancelling a check-in persists a new `cancelled` status and clears service state.
+- The missed-check-in notification no longer claims the contact was notified.
+  It now asks the user to open their messaging app.
+- Cloud incident create and resolve calls retry three times with short backoff
+  (0.75 s, 1.5 s). The local SOS still succeeds if all retries fail.
+
+### Licensing
+
+- The repository ships one root MIT license. The backend and admin package
+  manifests now declare MIT; the admin package previously declared ISC.
+
+### Still not addressed
+
+Check-in timers are held in memory and do not survive process death or reboot.
+Incident delivery has no durable retry queue. SOS still requires the user to
+send SMS or place calls. See [known limitations](KNOWN_LIMITATIONS.md).
+
 ## Repository organization - 2026-09-27
 
 - Android, the active Cloudflare Worker, and the Next.js portal share the public

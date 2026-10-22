@@ -62,6 +62,7 @@ fun SOSScreen(
     val coroutineScope = rememberCoroutineScope()
     var preparingMessage by remember { mutableStateOf(false) }
     var actionError by remember { mutableStateOf<String?>(null) }
+    var showLocationDisclosure by remember { mutableStateOf(false) }
     val locationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
@@ -70,6 +71,21 @@ fun SOSScreen(
     }
     
     var showDeactivateDialog by remember { mutableStateOf(false) }
+    if (showLocationDisclosure) {
+        com.rakshyaa.rakshyaa.ui.components.LocationDisclosureDialog(
+            onDismiss = { showLocationDisclosure = false },
+            onAgree = {
+                showLocationDisclosure = false
+                if (androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, android.Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED) viewModel.activateSos()
+                else locationPermission.launch(arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                ))
+            }
+        )
+    }
     
     val colors = MaterialTheme.colorScheme
     val primaryColor = colors.primary
@@ -146,13 +162,7 @@ fun SOSScreen(
         SOSButton(
             viewModel = viewModel,
             onActivateClick = {
-                if (androidx.core.content.ContextCompat.checkSelfPermission(
-                        context, android.Manifest.permission.ACCESS_FINE_LOCATION
-                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED) viewModel.activateSos()
-                else locationPermission.launch(arrayOf(
-                    android.Manifest.permission.ACCESS_FINE_LOCATION,
-                    android.Manifest.permission.ACCESS_COARSE_LOCATION
-                ))
+                showLocationDisclosure = true
             },
             onDeactivateClick = { showDeactivateDialog = true }
         )

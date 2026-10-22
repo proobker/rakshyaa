@@ -76,6 +76,7 @@ fun RideMonitoringScreen(
     var showStartDialog by remember { mutableStateOf(false) }
     var deviationThreshold by remember { mutableStateOf(uiState.deviationThreshold) }
     var pendingThreshold by remember { mutableStateOf<Double?>(null) }
+    var disclosureThreshold by remember { mutableStateOf<Double?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -92,7 +93,7 @@ fun RideMonitoringScreen(
         }
     }
 
-    fun requestStartRide(threshold: Double) {
+    fun startRideAfterDisclosure(threshold: Double) {
         val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         viewModel.updateLocationPermission(hasFine)
@@ -104,6 +105,21 @@ fun RideMonitoringScreen(
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
             )
         }
+    }
+
+    fun requestStartRide(threshold: Double) {
+        disclosureThreshold = threshold
+    }
+
+    if (disclosureThreshold != null) {
+        com.rakshyaa.rakshyaa.ui.components.LocationDisclosureDialog(
+            onDismiss = { disclosureThreshold = null },
+            onAgree = {
+                val threshold = disclosureThreshold
+                disclosureThreshold = null
+                if (threshold != null) startRideAfterDisclosure(threshold)
+            }
+        )
     }
 
     Scaffold(

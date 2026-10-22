@@ -117,7 +117,14 @@
     <string name="tracking_active">Tracking Active</string>
     <string name="tracking_inactive">Tracking Inactive</string>
     <string name="tracking_permission_needed">Location permission required</string>
-    <string name="tracking_permission_message">Grant location access to record your route on this device.</string>
+    <string name="tracking_permission_message">Grant precise location access to record your route. Review how location is used before continuing.</string>
+    <string name="location_disclosure_title">Location use during safety sessions</string>
+    <string name="location_disclosure_message">Rakshyaa collects location data to enable Location Tracking, ride recording, and SOS location history in the background, even when the app is not in use, during sessions you start. Records are stored encrypted on this device. In cloud sessions, SOS sends your starting location to the operator service; encrypted records may be uploaded through backup or manual sync. Tracking does not automatically send your route to contacts. You can stop each session from its screen.</string>
+    <string name="location_disclosure_agree">Agree and continue</string>
+    <string name="location_disclosure_decline">Not now</string>
+    <string name="tracking_background_title">Background location permission</string>
+    <string name="tracking_background_message">You can allow location access when Rakshyaa is not in use. In app settings, open Permissions, then Location, and select “%1$s”. You can decline and continue using other app features. Granting permission does not start tracking.</string>
+    <string name="tracking_precise_required">Precise location is required for GPS route recording. You can change this in app settings.</string>
     <string name="grant_permission">Grant Permission</string>
     <string name="permission_needed">Location permission required</string>
     <string name="permission_needed_desc">Grant location access to monitor your ride and send alerts if you go off route.</string>
