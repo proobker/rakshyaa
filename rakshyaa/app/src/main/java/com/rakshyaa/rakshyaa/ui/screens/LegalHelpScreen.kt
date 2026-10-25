@@ -3,6 +3,7 @@ package com.rakshyaa.rakshyaa.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -135,6 +136,7 @@ fun LegalHelpScreen(
                 androidx.compose.foundation.layout.Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .horizontalScroll(androidx.compose.foundation.rememberScrollState())
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -143,7 +145,7 @@ fun LegalHelpScreen(
                         androidx.compose.material3.FilterChip(
                             selected = isSelected,
                             onClick = { viewModel.filterByCategory(category) },
-                            label = { Text(category.uppercase()) }
+                            label = { Text(category.uppercase(), maxLines = 1, softWrap = false) }
                         )
                     }
                 }
@@ -296,8 +298,8 @@ fun LegalResourceCard(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .background(categoryColor.copy(alpha = 0.15f))
-                        .clip(androidx.compose.foundation.shape.CircleShape),
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(categoryColor.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -308,36 +310,36 @@ fun LegalResourceCard(
                     )
                 }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(categoryColor.copy(alpha = 0.2f))
                     ) {
                         Text(
-                            text = resource.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = colors.onSurface
+                            text = resource.category.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = categoryColor,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                         )
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                                .background(categoryColor.copy(alpha = 0.2f))
-                                .clip(RoundedCornerShape(4.dp))
-                        ) {
-                            Text(
-                                text = resource.category.uppercase(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = categoryColor,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
-                        }
                     }
+                    Text(
+                        text = resource.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colors.onSurface
+                    )
                     Text(
                         text = resource.body,
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
-                        maxLines = 3
+                        maxLines = 3,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
 

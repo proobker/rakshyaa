@@ -314,8 +314,8 @@ fun CheckInCard(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .background(statusColor.copy(alpha = 0.15f))
-                        .clip(CircleShape),
+                        .clip(CircleShape)
+                        .background(statusColor.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

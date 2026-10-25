@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rakshyaa.rakshyaa.R
@@ -216,17 +217,18 @@ Card(
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = if (isPrimary) 140.dp else 120.dp),
+            .heightIn(min = if (isPrimary) 172.dp else 164.dp),
         shape = androidx.compose.material3.MaterialTheme.shapes.large
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.TopStart
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 horizontalAlignment = Alignment.Start
             ) {
                 // Icon with colored background
@@ -254,12 +256,16 @@ Card(
                         color = onSurface,
                         fontWeight = if (isPrimary) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Medium,
                         textAlign = TextAlign.Start,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = feature.description,
                         style = MaterialTheme.typography.bodySmall,
                         color = onSurfaceVariant,
                         textAlign = TextAlign.Start,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }

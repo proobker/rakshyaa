@@ -250,8 +250,8 @@ fun VideoCaptureScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(androidx.compose.ui.graphics.Color.Black)
                         .clip(RoundedCornerShape(12.dp))
+                        .background(androidx.compose.ui.graphics.Color.Black)
                 ) {
                     AndroidView(
                         factory = { ctx ->
@@ -276,8 +276,8 @@ fun VideoCaptureScreen(
                             Box(
                                 modifier = Modifier
                                     .size(12.dp)
-                                    .background(androidx.compose.ui.graphics.Color.Red)
                                     .clip(CircleShape)
+                                    .background(androidx.compose.ui.graphics.Color.Red)
                             )
                             Text(
                                 text = " $recordedDuration",
@@ -586,8 +586,8 @@ fun VideoItem(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .background(colors.primary.copy(alpha = 0.15f))
-                        .clip(CircleShape),
+                        .clip(CircleShape)
+                        .background(colors.primary.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -618,8 +618,8 @@ fun VideoItem(
                         Box(
                             modifier = Modifier
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
-                                .background(colors.primary.copy(alpha = 0.2f))
                                 .clip(RoundedCornerShape(4.dp))
+                                .background(colors.primary.copy(alpha = 0.2f))
                         ) {
                             Text(
                                 text = video.videoType.uppercase(),

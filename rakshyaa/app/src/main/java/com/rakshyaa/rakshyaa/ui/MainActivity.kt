@@ -61,10 +61,14 @@ fun RakshyaaApp(viewModel: AuthViewModel = hiltViewModel()) {
                     navController = navController,
                     currentRoute = currentRoute,
                     onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+                        // A tab already in the back stack (e.g. Home under a feature screen) is
+                        // popped to directly; restoring its saved state would reopen that screen.
+                        if (!navController.popBackStack(route, inclusive = false)) {
+                            navController.navigate(route) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     }
                 )

@@ -251,26 +251,8 @@ fun ProfileScreen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
                     ) {
-                        if (!uiState.isEditing) {
-                            Button(
-                                onClick = {
-                                    editName = uiState.userName ?: ""
-                                    editPhone = uiState.userPhone ?: ""
-                                    editBio = uiState.userBio ?: ""
-                                    viewModel.toggleEditMode()
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                    contentColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Text("  Edit Profile")
-                            }
-                        }
                         ChipItem(
                             icon = Icons.Default.Verified,
                             label = stringResource(if (uiState.userEmail == null) R.string.on_device else R.string.verified),
@@ -281,6 +263,29 @@ fun ProfileScreen(
                             label = "v${uiState.appVersion}",
                             color = MaterialTheme.colorScheme.primary
                         )
+                    }
+                    if (!uiState.isEditing) {
+                        Button(
+                            onClick = {
+                                editName = uiState.userName ?: ""
+                                editPhone = uiState.userPhone ?: ""
+                                editBio = uiState.userBio ?: ""
+                                viewModel.toggleEditMode()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp))
+                            androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+                            Text(
+                                stringResource(com.rakshyaa.rakshyaa.R.string.edit_profile),
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }

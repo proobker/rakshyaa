@@ -586,8 +586,8 @@ fun SafePlaceCard(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .background(typeColor.copy(alpha = 0.15f))
-                        .clip(CircleShape),
+                        .clip(CircleShape)
+                        .background(typeColor.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -626,8 +626,8 @@ fun SafePlaceCard(
                         Box(
                             modifier = Modifier
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
-                                .background(typeColor.copy(alpha = 0.2f))
                                 .clip(RoundedCornerShape(4.dp))
+                                .background(typeColor.copy(alpha = 0.2f))
                         ) {
                             Text(
                                 text = place.type.uppercase(),
@@ -730,15 +730,18 @@ fun AddSafePlaceDialog(
                         onExpandedChange = { expanded = !expanded }
                     ) {
                         androidx.compose.material3.TextField(
-                            value = types.first { it.first == type }.second.toString(),
+                            value = placeTypeLabel(type),
                             onValueChange = { },
-                            label = { Text(type.uppercase()) },
                             readOnly = true,
-                            trailingIcon = {
+                            singleLine = true,
+                            leadingIcon = {
                                 Icon(
-                                    imageVector = if (expanded) Icons.Default.Check else Icons.Default.Close,
+                                    imageVector = types.first { it.first == type }.second,
                                     contentDescription = null
                                 )
+                            },
+                            trailingIcon = {
+                                androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = androidx.compose.material3.TextFieldDefaults.textFieldColors(
@@ -751,7 +754,8 @@ fun AddSafePlaceDialog(
                         ) {
                             types.forEach { (t, icon) ->
                                 androidx.compose.material3.DropdownMenuItem(
-                                    text = { Text(t.uppercase()) },
+                                    text = { Text(placeTypeLabel(t)) },
+                                    leadingIcon = { Icon(icon, contentDescription = null) },
                                     onClick = {
                                         onTypeChange(t)
                                         expanded = false
@@ -826,3 +830,6 @@ fun AddSafePlaceDialog(
         }
     )
 }
+
+private fun placeTypeLabel(type: String): String =
+    if (type == "user") "Personal" else type.replace('_', ' ').lowercase().replaceFirstChar { it.titlecase() }

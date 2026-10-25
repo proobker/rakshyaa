@@ -336,92 +336,104 @@ fun ContactCard(
             containerColor = if (contact.isPrimary) colors.primaryContainer else colors.surfaceContainer
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Avatar
-            Box(
-                modifier = Modifier.size(48.dp),
-                contentAlignment = Alignment.Center
+        Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 16.dp, end = 8.dp, bottom = 4.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (contact.isPrimary) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(colors.primary)
-                            .clip(CircleShape)
-                    ) {
-                        Text(
-                            text = initial.toString(),
-                            color = colors.onPrimary,
-                            fontSize = 20.sp,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                        )
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(colors.surfaceContainerHighest)
-                            .clip(CircleShape)
-                    ) {
-                        Text(
-                            text = initial.toString(),
-                            color = colors.onSurfaceVariant,
-                            fontSize = 20.sp,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                        )
-                    }
-                }
-            }
-
-            // Contact Info
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Avatar
+                Box(
+                    modifier = Modifier.size(48.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = contact.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.onSurface,
-                        fontWeight = if (contact.isPrimary) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal
-                    )
                     if (contact.isPrimary) {
                         Box(
                             modifier = Modifier
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                                .background(colors.primary)
-                                .clip(RoundedCornerShape(4.dp))
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(colors.primary),
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = stringResource(R.string.primary_contact),
+                                text = initial.toString(),
                                 color = colors.onPrimary,
-                                fontSize = 10.sp,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                fontSize = 20.sp,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(colors.surfaceContainerHighest),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = initial.toString(),
+                                color = colors.onSurfaceVariant,
+                                fontSize = 20.sp,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
                             )
                         }
                     }
                 }
-                Text(
-                    text = contact.relationship,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant
-                )
-                Text(
-                    text = contact.phoneNumber,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant
-                )
+
+                // Contact Info
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = contact.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.onSurface,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                            fontWeight = if (contact.isPrimary) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal
+                        )
+                        if (contact.isPrimary) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(colors.primary)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.primary_contact),
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    color = colors.onPrimary,
+                                    fontSize = 10.sp,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+                    Text(
+                        text = contact.relationship,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant
+                    )
+                    Text(
+                        text = contact.phoneNumber,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
             }
 
             // Actions
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
                 IconButton(onClick = onCall) {
                     Icon(Icons.Default.Call, contentDescription = stringResource(R.string.call), tint = colors.primary)
                 }
@@ -503,13 +515,10 @@ fun ContactDialog(
                         androidx.compose.material3.TextField(
                             value = relationship,
                             onValueChange = { },
-                            label = { Text(relationship) },
                             readOnly = true,
+                            singleLine = true,
                             trailingIcon = {
-                                Icon(
-                                    imageVector = if (expanded) Icons.Default.Check else Icons.Default.Close,
-                                    contentDescription = null
-                                )
+                                androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = androidx.compose.material3.TextFieldDefaults.textFieldColors(

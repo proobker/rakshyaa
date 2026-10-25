@@ -341,15 +341,13 @@ private fun InfoCard(
     val surfaceContainer = colors.surfaceContainer
     
     Card(
-        modifier = modifier.heightIn(min = 96.dp),
+        modifier = modifier,
         colors = CardDefaults.cardColors(
             containerColor = if (isActive) color.copy(alpha = 0.1f) else surfaceContainer
         )
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(12.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -375,7 +373,7 @@ private fun InfoCard(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isActive) color.copy(alpha = 0.8f) else onSurfaceVariant,
-                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(start = 26.dp)
             )
         }
     }

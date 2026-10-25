@@ -470,6 +470,7 @@ fun LocationTrackingButton(
         onClick = if (isTracking) onStopClick else onStartClick,
         enabled = hasPermissions && !isTracking || isTracking,
         shape = androidx.compose.foundation.shape.CircleShape,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
         modifier = Modifier
             .size(140.dp),
         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
@@ -497,7 +498,9 @@ fun LocationTrackingButton(
                 fontSize = 12.sp,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 letterSpacing = 0.5.sp,
-                textAlign = TextAlign.Center
+                lineHeight = 14.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 2
             )
         }
     }

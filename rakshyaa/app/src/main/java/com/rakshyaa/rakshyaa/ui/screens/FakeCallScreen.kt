@@ -99,8 +99,8 @@ private fun CountdownScreen(
             Box(
                 modifier = Modifier
                     .size(120.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                    .clip(CircleShape),
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -212,8 +212,8 @@ private fun IncomingCallScreen(
                 Box(
                     modifier = Modifier
                         .size(80.dp)
-                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f))
-                        .clip(CircleShape),
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     IconButton(onClick = { viewModel.endCall() }) {
@@ -230,8 +230,8 @@ private fun IncomingCallScreen(
                 Box(
                     modifier = Modifier
                         .size(80.dp)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                        .clip(CircleShape),
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     IconButton(onClick = {

@@ -122,6 +122,7 @@ fun SOSButtonContent(
                 contentColor = if (uiState.isSosActive) onError else onPrimary
             ),
             shape = CircleShape,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
             modifier = Modifier
                 .size(buttonDiameter)
 
@@ -152,7 +153,10 @@ fun SOSButtonContent(
                     color = if (uiState.isSosActive) onError else onPrimary,
                     fontSize = 12.sp,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.5.sp,
+                    lineHeight = 14.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    maxLines = 2
                 )
             }
         }
