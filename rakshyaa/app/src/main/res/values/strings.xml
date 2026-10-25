@@ -292,6 +292,8 @@
     <string name="help_support_desc">Get help and contact support</string>
     <string name="sign_out_confirmation">Are you sure you want to sign out?</string>
     <string name="edit_profile">Edit profile</string>
+    <string name="update_downloaded">An update is ready to install.</string>
+    <string name="update_restart">Restart</string>
     <string name="verified">Verified</string>
     <string name="user">User</string>
     <string name="profile">Profile</string>

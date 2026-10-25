@@ -1,5 +1,24 @@
 # Release notes
 
+## Version 1.3 (version code 4) - 2026-10-25
+
+### Added
+
+- Play in-app updates: Play-installed builds show Google Play's flexible update
+  prompt when a newer version is available. The app stays usable while the
+  update downloads, then offers a Restart action. Sideloaded builds skip it.
+
+### Fixed
+
+- The Home tab returns to Home from feature screens instead of reopening them.
+- The Add Safe Place type field showed an internal object name; it now shows a
+  readable type with its icon. The contact relationship field no longer repeats
+  its value as a label.
+- Text overflow at large font sizes: profile Edit button, Legal Help filter chips
+  and category badges, emergency contact cards, home action cards, SOS info
+  cards, and the round SOS/Tracking button labels.
+- Circular icon backgrounds rendered as squares on several screens.
+
 ## Safety hardening - 2026-09-27
 
 Android remains version 1.1 / version code 2 in source. The signed APK/AAB built
