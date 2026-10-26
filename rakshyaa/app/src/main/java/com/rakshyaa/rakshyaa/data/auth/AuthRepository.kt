@@ -79,6 +79,8 @@ class AuthRepository @Inject constructor(
             _state.value = _state.value.copy(error = null)
         } catch (e: androidx.credentials.exceptions.NoCredentialException) {
             _state.value = _state.value.copy(error = "No Google account is available for sign-in. Add an account in device Settings and check that Google Play services is enabled and up to date, then try again.")
+        } catch (e: androidx.credentials.exceptions.GetCredentialProviderConfigurationException) {
+            _state.value = _state.value.copy(error = "Google sign-in is unavailable on this device. Update Google Play services from the Play Store (and make sure it is enabled), then try again.")
         } catch (e: Exception) {
             _state.value = _state.value.copy(error = e.message ?: "Sign-in failed")
         } finally {
