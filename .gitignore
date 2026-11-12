@@ -49,3 +49,10 @@ Thumbs.db
 *~
 *.orig
 *.bak
+
+# Local BlueStacks tooling and its run logs.
+rakshyaa/scripts/start-bluestacks.ps1
+rakshyaa/scripts/bluestacks-lib.ps1
+rakshyaa/scripts/update-rakshyaa-playstore.ps1
+rakshyaa/scripts/use-rakshyaa.ps1
+rakshyaa/scripts/logs/
