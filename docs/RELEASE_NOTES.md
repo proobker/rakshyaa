@@ -1,5 +1,10 @@
 # Release notes
 
+## Version 1.3.2 (version code 6)
+
+- Rebuild of the existing 1.3.1 application source with the release version
+  incremented for distribution. No application behavior changes are included.
+
 ## Version 1.3 (version code 4) - 2026-10-25
 
 ### Added
