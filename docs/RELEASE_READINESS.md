@@ -1,5 +1,21 @@
 # Release readiness
 
+## Android rebuild - 2026-11-12
+
+Built from the current source as version 1.3.2 / version code 6, with
+`CLOUD_ENABLED=true` from the local Android `backend.properties`.
+`test compileDebugKotlin lintDebug lintRelease assembleRelease bundleRelease`
+completed successfully (121 actionable tasks; 119 executed, 2 up-to-date).
+Release lint reported 110 warnings and 7 hints. The AAB passed
+`jarsigner -verify`; APK signature verification and ZIP alignment were not run
+because Android SDK build tools were not available in the command environment.
+No device installation or acceptance checks were performed.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `app-release.apk` | `911591151b95f416120390df680598c9200788801e0be3a072f239f16e4193d1` |
+| `app-release.aab` | `aa8d3f6f163b8060901d50195480d2fc689580552cdc7e8f754353258fc597fc` |
+
 ## Launch review - 2026-10-09
 
 Source revision `5240d7a`. Status: **not ready for public launch.**
